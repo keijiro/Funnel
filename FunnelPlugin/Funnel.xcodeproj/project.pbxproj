@@ -1,0 +1,310 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0FE12D40186C1E2000E9FD74 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0FE12D3F186C1E2000E9FD74 /* CoreFoundation.framework */; };
+		0FE12D46186C1E2000E9FD74 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 0FE12D44186C1E2000E9FD74 /* InfoPlist.strings */; };
+		0FE12D4E186C1E6000E9FD74 /* Syphon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0FE12D4D186C1E6000E9FD74 /* Syphon.framework */; };
+		0FE12D50186C1E8200E9FD74 /* Syphon.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 0FE12D4D186C1E6000E9FD74 /* Syphon.framework */; };
+		0FE12D53186C1EAC00E9FD74 /* Funnel.m in Sources */ = {isa = PBXBuildFile; fileRef = 0FE12D52186C1EAC00E9FD74 /* Funnel.m */; };
+		0FE12D57186C24DF00E9FD74 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0FE12D56186C24DF00E9FD74 /* OpenGL.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0FE12D4F186C1E7600E9FD74 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				0FE12D50186C1E8200E9FD74 /* Syphon.framework in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0FE12D3C186C1E2000E9FD74 /* Funnel.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Funnel.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
+		0FE12D3F186C1E2000E9FD74 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
+		0FE12D43186C1E2000E9FD74 /* Funnel-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Funnel-Info.plist"; sourceTree = "<group>"; };
+		0FE12D45186C1E2000E9FD74 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		0FE12D47186C1E2000E9FD74 /* Funnel-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Funnel-Prefix.pch"; sourceTree = "<group>"; };
+		0FE12D4D186C1E6000E9FD74 /* Syphon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Syphon.framework; path = ../Syphon.framework; sourceTree = "<group>"; };
+		0FE12D52186C1EAC00E9FD74 /* Funnel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Funnel.m; sourceTree = "<group>"; };
+		0FE12D54186C24D000E9FD74 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		0FE12D56186C24DF00E9FD74 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0FE12D39186C1E2000E9FD74 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0FE12D57186C24DF00E9FD74 /* OpenGL.framework in Frameworks */,
+				0FE12D40186C1E2000E9FD74 /* CoreFoundation.framework in Frameworks */,
+				0FE12D4E186C1E6000E9FD74 /* Syphon.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0FE12D33186C1E2000E9FD74 = {
+			isa = PBXGroup;
+			children = (
+				0FE12D41186C1E2000E9FD74 /* Funnel */,
+				0FE12D3E186C1E2000E9FD74 /* Frameworks */,
+				0FE12D3D186C1E2000E9FD74 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		0FE12D3D186C1E2000E9FD74 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0FE12D3C186C1E2000E9FD74 /* Funnel.bundle */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		0FE12D3E186C1E2000E9FD74 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0FE12D56186C24DF00E9FD74 /* OpenGL.framework */,
+				0FE12D54186C24D000E9FD74 /* CoreGraphics.framework */,
+				0FE12D4D186C1E6000E9FD74 /* Syphon.framework */,
+				0FE12D3F186C1E2000E9FD74 /* CoreFoundation.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		0FE12D41186C1E2000E9FD74 /* Funnel */ = {
+			isa = PBXGroup;
+			children = (
+				0FE12D42186C1E2000E9FD74 /* Supporting Files */,
+				0FE12D52186C1EAC00E9FD74 /* Funnel.m */,
+			);
+			path = Funnel;
+			sourceTree = "<group>";
+		};
+		0FE12D42186C1E2000E9FD74 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				0FE12D43186C1E2000E9FD74 /* Funnel-Info.plist */,
+				0FE12D44186C1E2000E9FD74 /* InfoPlist.strings */,
+				0FE12D47186C1E2000E9FD74 /* Funnel-Prefix.pch */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0FE12D3B186C1E2000E9FD74 /* Funnel */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0FE12D4A186C1E2000E9FD74 /* Build configuration list for PBXNativeTarget "Funnel" */;
+			buildPhases = (
+				0FE12D38186C1E2000E9FD74 /* Sources */,
+				0FE12D39186C1E2000E9FD74 /* Frameworks */,
+				0FE12D3A186C1E2000E9FD74 /* Resources */,
+				0FE12D4F186C1E7600E9FD74 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Funnel;
+			productName = Funnel;
+			productReference = 0FE12D3C186C1E2000E9FD74 /* Funnel.bundle */;
+			productType = "com.apple.product-type.bundle";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0FE12D34186C1E2000E9FD74 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0500;
+				ORGANIZATIONNAME = "Keijiro Takahashi";
+			};
+			buildConfigurationList = 0FE12D37186C1E2000E9FD74 /* Build configuration list for PBXProject "Funnel" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 0FE12D33186C1E2000E9FD74;
+			productRefGroup = 0FE12D3D186C1E2000E9FD74 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0FE12D3B186C1E2000E9FD74 /* Funnel */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0FE12D3A186C1E2000E9FD74 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0FE12D46186C1E2000E9FD74 /* InfoPlist.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0FE12D38186C1E2000E9FD74 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0FE12D53186C1EAC00E9FD74 /* Funnel.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		0FE12D44186C1E2000E9FD74 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				0FE12D45186C1E2000E9FD74 /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		0FE12D48186C1E2000E9FD74 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		0FE12D49186C1E2000E9FD74 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		0FE12D4B186C1E2000E9FD74 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					/Users/keijiro/Documents/Syphon,
+				);
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Funnel/Funnel-Prefix.pch";
+				INFOPLIST_FILE = "Funnel/Funnel-Info.plist";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Bundles";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				WRAPPER_EXTENSION = bundle;
+			};
+			name = Debug;
+		};
+		0FE12D4C186C1E2000E9FD74 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					/Users/keijiro/Documents/Syphon,
+				);
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Funnel/Funnel-Prefix.pch";
+				INFOPLIST_FILE = "Funnel/Funnel-Info.plist";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Bundles";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				WRAPPER_EXTENSION = bundle;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0FE12D37186C1E2000E9FD74 /* Build configuration list for PBXProject "Funnel" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0FE12D48186C1E2000E9FD74 /* Debug */,
+				0FE12D49186C1E2000E9FD74 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0FE12D4A186C1E2000E9FD74 /* Build configuration list for PBXNativeTarget "Funnel" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0FE12D4B186C1E2000E9FD74 /* Debug */,
+				0FE12D4C186C1E2000E9FD74 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0FE12D34186C1E2000E9FD74 /* Project object */;
+}

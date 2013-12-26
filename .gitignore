@@ -1,0 +1,13 @@
+Unity/Library/
+Unity/Temp/
+
+*.csproj
+*.unityproj
+*.sln
+*.pidb
+*.userprefs
+
+xcuserdata
+*.pbxuser
+
+.DS_Store
