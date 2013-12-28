@@ -7,10 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0FDBDD6A186C51370099AE79 /* Syphon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0FDBDD69186C51370099AE79 /* Syphon.framework */; };
+		0FDBDD6B186C51480099AE79 /* Syphon.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 0FDBDD69186C51370099AE79 /* Syphon.framework */; };
 		0FE12D40186C1E2000E9FD74 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0FE12D3F186C1E2000E9FD74 /* CoreFoundation.framework */; };
 		0FE12D46186C1E2000E9FD74 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 0FE12D44186C1E2000E9FD74 /* InfoPlist.strings */; };
-		0FE12D4E186C1E6000E9FD74 /* Syphon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0FE12D4D186C1E6000E9FD74 /* Syphon.framework */; };
-		0FE12D50186C1E8200E9FD74 /* Syphon.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 0FE12D4D186C1E6000E9FD74 /* Syphon.framework */; };
 		0FE12D53186C1EAC00E9FD74 /* Funnel.m in Sources */ = {isa = PBXBuildFile; fileRef = 0FE12D52186C1EAC00E9FD74 /* Funnel.m */; };
 		0FE12D57186C24DF00E9FD74 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0FE12D56186C24DF00E9FD74 /* OpenGL.framework */; };
 /* End PBXBuildFile section */
@@ -22,19 +22,19 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				0FE12D50186C1E8200E9FD74 /* Syphon.framework in CopyFiles */,
+				0FDBDD6B186C51480099AE79 /* Syphon.framework in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0FDBDD69186C51370099AE79 /* Syphon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Syphon.framework; path = ../../Syphon.framework; sourceTree = "<group>"; };
 		0FE12D3C186C1E2000E9FD74 /* Funnel.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Funnel.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FE12D3F186C1E2000E9FD74 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
 		0FE12D43186C1E2000E9FD74 /* Funnel-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Funnel-Info.plist"; sourceTree = "<group>"; };
 		0FE12D45186C1E2000E9FD74 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		0FE12D47186C1E2000E9FD74 /* Funnel-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Funnel-Prefix.pch"; sourceTree = "<group>"; };
-		0FE12D4D186C1E6000E9FD74 /* Syphon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Syphon.framework; path = ../Syphon.framework; sourceTree = "<group>"; };
 		0FE12D52186C1EAC00E9FD74 /* Funnel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Funnel.m; sourceTree = "<group>"; };
 		0FE12D54186C24D000E9FD74 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		0FE12D56186C24DF00E9FD74 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
@@ -46,8 +46,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				0FE12D57186C24DF00E9FD74 /* OpenGL.framework in Frameworks */,
+				0FDBDD6A186C51370099AE79 /* Syphon.framework in Frameworks */,
 				0FE12D40186C1E2000E9FD74 /* CoreFoundation.framework in Frameworks */,
-				0FE12D4E186C1E6000E9FD74 /* Syphon.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,9 +74,9 @@
 		0FE12D3E186C1E2000E9FD74 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				0FDBDD69186C51370099AE79 /* Syphon.framework */,
 				0FE12D56186C24DF00E9FD74 /* OpenGL.framework */,
 				0FE12D54186C24D000E9FD74 /* CoreGraphics.framework */,
-				0FE12D4D186C1E6000E9FD74 /* Syphon.framework */,
 				0FE12D3F186C1E2000E9FD74 /* CoreFoundation.framework */,
 			);
 			name = Frameworks;
@@ -303,6 +303,7 @@
 				0FE12D4C186C1E2000E9FD74 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
