@@ -1,5 +1,5 @@
 //
-// Funnel - Syphon Server Plugin for Unity
+// Funnel: Minimal Syphon Server Plugin for Unity
 // By Keijiro Takahashi, 2013
 //
 // - There are 256 slots for servers.
