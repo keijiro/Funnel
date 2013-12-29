@@ -13,6 +13,7 @@
 		0FE12D46186C1E2000E9FD74 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 0FE12D44186C1E2000E9FD74 /* InfoPlist.strings */; };
 		0FE12D53186C1EAC00E9FD74 /* Funnel.m in Sources */ = {isa = PBXBuildFile; fileRef = 0FE12D52186C1EAC00E9FD74 /* Funnel.m */; };
 		0FE12D57186C24DF00E9FD74 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0FE12D56186C24DF00E9FD74 /* OpenGL.framework */; };
+		0FF410AC186FC38D0017707E /* FunnelServerHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = 0FF410AB186FC38D0017707E /* FunnelServerHandler.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -38,6 +39,8 @@
 		0FE12D52186C1EAC00E9FD74 /* Funnel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Funnel.m; sourceTree = "<group>"; };
 		0FE12D54186C24D000E9FD74 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		0FE12D56186C24DF00E9FD74 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		0FF410AA186FC38D0017707E /* FunnelServerHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FunnelServerHandler.h; sourceTree = "<group>"; };
+		0FF410AB186FC38D0017707E /* FunnelServerHandler.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FunnelServerHandler.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +90,8 @@
 			children = (
 				0FE12D42186C1E2000E9FD74 /* Supporting Files */,
 				0FE12D52186C1EAC00E9FD74 /* Funnel.m */,
+				0FF410AA186FC38D0017707E /* FunnelServerHandler.h */,
+				0FF410AB186FC38D0017707E /* FunnelServerHandler.m */,
 			);
 			path = Funnel;
 			sourceTree = "<group>";
@@ -165,6 +170,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0FE12D53186C1EAC00E9FD74 /* Funnel.m in Sources */,
+				0FF410AC186FC38D0017707E /* FunnelServerHandler.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

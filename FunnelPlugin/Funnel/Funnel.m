@@ -1,24 +1,46 @@
+//
+// Funnel - Syphon Server Plugin for Unity
+// By Keijiro Takahashi, 2013
+//
+// - There are 256 slots for servers.
+// - This plugin uses render event IDs from 0xf9100 to 0xf91ff for handling the slots.
+//
+
 #import <Foundation/Foundation.h>
 #import <Syphon/Syphon.h>
+#import "FunnelServerHandler.h"
 
-// Event ID: Publish a frame texture.
-#define FUNNEL_EVENT_PUBLISH 0xfa910
+// Event ID
+#define FUNNEL_EVENT_ID 0xfa9100
 
-// Syphon server and bound OpenGL context.
-static SyphonServer *server;
+// Application bound OpenGL context.
 static CGLContextObj glContext;
 
-// Frame texture.
-static GLint frameTextureID;
-static NSRect frameTextureRect;
+// Server slots.
+static NSPointerArray *servers;
 
-// Exported functions.
+#pragma mark
+#pragma mark Expoerted functions
 
 // Set a frame texture.
-void FunnelSetFrameTexture(int textureID, int width, int height)
+void FunnelSetFrameTexture(int slotIndex, const char* frameName, int textureName, int width, int height)
 {
-    frameTextureID = textureID;
-    frameTextureRect = NSMakeRect(0, 0, width, height);
+    if (!servers) return;
+    
+    FunnelServerHandler *handler = [servers pointerAtIndex:slotIndex];
+    
+    // Allocate a new handler if it gets a new slot.
+    if (!handler)
+    {
+        handler = [[FunnelServerHandler alloc] init];
+        [servers replacePointerAtIndex:slotIndex withPointer:handler];
+        
+        NSString *name = [NSString stringWithUTF8String:frameName];
+        handler.syphonServer = [[SyphonServer alloc] initWithName:name context:glContext options:nil];
+    }
+    
+    handler.frameTextureName = textureName;
+    handler.frameTextureRect = NSMakeRect(0, 0, width, height);
 }
 
 // Callback function for graphics device initialization/shutdown.
@@ -27,21 +49,35 @@ void UnitySetGraphicsDevice(void *device, int deviceType, int eventType)
     if (eventType == 0) // kGfxDeviceEventInitialize
     {
         glContext = CGLGetCurrentContext();
-        server = [[SyphonServer alloc] initWithName:@"Funnel (Unity)" context:glContext options:nil];
+        servers = [[NSPointerArray strongObjectsPointerArray] retain];
+        servers.count = 256;
     }
     else if (eventType == 1) // kGfxDeviceEventShutdown
     {
-        [server stop];
-        [server release];
-        server = nil;
+        glContext = nil;
+        [servers release];
+        servers = nil;
     }
 }
 
 // Callback function for rendering events.
 void UnityRenderEvent(int eventID)
 {
-    if (eventID == FUNNEL_EVENT_PUBLISH)
+    if (!servers) return;
+
+    // Check the event ID.
+    if ((eventID & ~0xff) != FUNNEL_EVENT_ID) return;
+    
+    // Retrieve the server handler from the server slot.
+    FunnelServerHandler *handler = [servers pointerAtIndex:(eventID & 0xff)];
+    
+    // Publish the frame if the handler is valid.
+    if (handler)
     {
-        [server publishFrameTexture:frameTextureID textureTarget:GL_TEXTURE_2D imageRegion:frameTextureRect textureDimensions:frameTextureRect.size flipped:NO];
+        [handler.syphonServer publishFrameTexture:handler.frameTextureName
+                                    textureTarget:GL_TEXTURE_2D
+                                      imageRegion:handler.frameTextureRect
+                                textureDimensions:handler.frameTextureRect.size
+                                          flipped:NO];
     }
 }

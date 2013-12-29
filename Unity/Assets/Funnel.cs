@@ -4,23 +4,29 @@ using System.Runtime.InteropServices;
 
 public class Funnel : MonoBehaviour
 {
-    public int screenWidth = 1280;
+	const int RenderEventID = 0xfa9100;
+	static int slotCount = 0;
+
+	int slotIndex;
+
+	public int screenWidth = 1280;
     public int screenHeight = 720;
     RenderTexture renderTexture;
-    const int RenderEventID = 0xfa910;
 
     [DllImport("Funnel")]
-    static extern void FunnelSetFrameTexture (int textureID, int width, int height);
+    static extern void FunnelSetFrameTexture (int slotIndex, string frameName, int textureID, int width, int height);
 
-    void Awake ()
+
+    void Start ()
     {
+		slotIndex = slotCount++;
         renderTexture = new RenderTexture (screenWidth, screenHeight, 24);
         camera.targetTexture = renderTexture;
     }
 
     void Update ()
     {
-        FunnelSetFrameTexture (renderTexture.GetNativeTextureID (), screenWidth, screenHeight);
-        GL.IssuePluginEvent (RenderEventID);
+        FunnelSetFrameTexture (slotIndex, gameObject.name, renderTexture.GetNativeTextureID (), screenWidth, screenHeight);
+        GL.IssuePluginEvent (RenderEventID + slotIndex);
     }
 }
