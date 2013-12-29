@@ -4,26 +4,25 @@ using System.Runtime.InteropServices;
 
 public class Funnel : MonoBehaviour
 {
-	const int RenderEventID = 0xfa9100;
-	static int slotCount = 0;
-
-	int slotIndex;
-
-	public int screenWidth = 1280;
+    const int RenderEventID = 0xfa9100;
+    static int slotCount = 0;
+    int slotIndex;
+    public int screenWidth = 1280;
     public int screenHeight = 720;
     RenderTexture renderTexture;
 
     [DllImport("Funnel")]
     static extern void FunnelSetFrameTexture (int slotIndex, string frameName, int textureID, int width, int height);
 
-	[DllImport("Funnel")]
-	static extern void FunnelReleaseSlot (int slotIndex);
+    [DllImport("Funnel")]
+    static extern void FunnelReleaseSlot (int slotIndex);
 
-	void Start ()
+    void Start ()
     {
-		slotIndex = slotCount++;
+        slotIndex = slotCount++;
         renderTexture = new RenderTexture (screenWidth, screenHeight, 24);
         camera.targetTexture = renderTexture;
+        camera.ResetAspect ();
     }
 
     void Update ()
@@ -32,8 +31,8 @@ public class Funnel : MonoBehaviour
         GL.IssuePluginEvent (RenderEventID + slotIndex);
     }
 
-	void OnDisable ()
-	{
-		FunnelReleaseSlot (slotIndex);
-	}
+    void OnDisable ()
+    {
+        FunnelReleaseSlot (slotIndex);
+    }
 }
