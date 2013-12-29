@@ -23,25 +23,52 @@ static NSPointerArray *servers;
 #pragma mark Expoerted functions
 
 // Set a frame texture.
-void FunnelSetFrameTexture(int slotIndex, const char* frameName, int textureName, int width, int height)
+void FunnelSetFrameTexture(int slotIndex, const char* frameNameCString, int textureName, int width, int height)
 {
     if (!servers) return;
     
+    // Temporary make a string with the name.
+    NSString *frameName = [NSString stringWithUTF8String:frameNameCString];
+    
+    // Retrieve the handler from the server slot.
     FunnelServerHandler *handler = [servers pointerAtIndex:slotIndex];
     
-    // Allocate a new handler if it gets a new slot.
+    // Allocate a new handler if it's an unknown slot.
     if (!handler)
     {
+        // Create a new handler.
         handler = [[FunnelServerHandler alloc] init];
         [servers replacePointerAtIndex:slotIndex withPointer:handler];
+        [handler release];
         
-        NSString *name = [NSString stringWithUTF8String:frameName];
-        handler.syphonServer = [[SyphonServer alloc] initWithName:name context:glContext options:nil];
+        // Create a new Syphon server.
+        SyphonServer *server = [[SyphonServer alloc] initWithName:frameName context:glContext options:nil];
+        handler.syphonServer = server;
+        [server release];
+    }
+    else
+    {
+        // Update the server name if it was changed.
+        if (![handler.syphonServer.name isEqualToString:frameName])
+        {
+            handler.syphonServer.name = frameName;
+        }
     }
     
+    // Update the status.
     handler.frameTextureName = textureName;
     handler.frameTextureRect = NSMakeRect(0, 0, width, height);
 }
+
+// Release a slot.
+void FunnelReleaseSlot(int slotIndex)
+{
+    if (!servers) return;
+    [servers replacePointerAtIndex:slotIndex withPointer:nil];
+}
+
+#pragma mark
+#pragma mark Unity rendering callbacks
 
 // Callback function for graphics device initialization/shutdown.
 void UnitySetGraphicsDevice(void *device, int deviceType, int eventType)
@@ -49,6 +76,7 @@ void UnitySetGraphicsDevice(void *device, int deviceType, int eventType)
     if (eventType == 0) // kGfxDeviceEventInitialize
     {
         glContext = CGLGetCurrentContext();
+        if (servers) [servers release];
         servers = [[NSPointerArray strongObjectsPointerArray] retain];
         servers.count = 256;
     }

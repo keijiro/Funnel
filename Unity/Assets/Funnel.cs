@@ -16,8 +16,10 @@ public class Funnel : MonoBehaviour
     [DllImport("Funnel")]
     static extern void FunnelSetFrameTexture (int slotIndex, string frameName, int textureID, int width, int height);
 
+	[DllImport("Funnel")]
+	static extern void FunnelReleaseSlot (int slotIndex);
 
-    void Start ()
+	void Start ()
     {
 		slotIndex = slotCount++;
         renderTexture = new RenderTexture (screenWidth, screenHeight, 24);
@@ -29,4 +31,9 @@ public class Funnel : MonoBehaviour
         FunnelSetFrameTexture (slotIndex, gameObject.name, renderTexture.GetNativeTextureID (), screenWidth, screenHeight);
         GL.IssuePluginEvent (RenderEventID + slotIndex);
     }
+
+	void OnDisable ()
+	{
+		FunnelReleaseSlot (slotIndex);
+	}
 }
