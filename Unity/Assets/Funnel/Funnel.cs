@@ -38,8 +38,17 @@ public class Funnel : MonoBehaviour
 
     #region Public properties
 
+    // Screen settings.
     public int screenWidth = 1280;
     public int screenHeight = 720;
+
+    // Editor settings.
+    public bool drawGameView;
+    public bool previewOnInspector;
+
+    // Render texture which is to be sent.
+    [System.NonSerialized]
+    public RenderTexture renderTexture;
 
     #endregion
 
@@ -47,9 +56,6 @@ public class Funnel : MonoBehaviour
 
     // Slot index for this server.
     int slotIndex;
-
-    // Render texture which is to be sent.
-    RenderTexture renderTexture;
 
     #endregion
 
@@ -91,6 +97,13 @@ public class Funnel : MonoBehaviour
 
         // Call GL operations on the GL thread.
         GL.IssuePluginEvent (RenderEventID + slotIndex);
+    }
+
+    void OnGUI ()
+    {
+        // Draw the render texture on the game view.
+        if (drawGameView)
+            GUI.DrawTexture (new Rect (0, 0, Screen.width, Screen.height), renderTexture, ScaleMode.ScaleToFit, false);
     }
 
     #endregion
