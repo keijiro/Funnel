@@ -5,8 +5,8 @@ Funnel
 
 *Funnel* is a minimal [Syphon](http://syphon.v002.info) server plugin for
 Unity Pro. It allows Unity to share frames with other application in
-realtime. It works not only on built apps but also the Editor, therefore you
-can edit a scene on the Editor and simultaneously show it on a Syphon client
+realtime. It works not only on built apps but also on the Editor, therefore you
+can edit a scene on the Editor and simultaneously show it on Syphon clients
 (e.g. MadMapper, VDMX, et cetera).
 
 System Requirements
@@ -24,7 +24,7 @@ Setting Up
 - Import the package into your project.
 - Add Funnel script component to a camera.
 
-Basically that's all! It publishes frame images on this camera in play mode.
+Basically that's all! It publishes frames on this camera in play mode.
 It uses the name of the game object as the name of the Syphon server, and
 therefore you can identify servers with their names.
 
@@ -45,7 +45,7 @@ Related Project
 
 [Symon](https://github.com/keijiro/Symon) is a minimal Syphon client app
 which is designed to use in combination with Funnel. It allows the Unity
-Editor to show frames on Retina-enabled displays or an external display
+Editor to show frames on Retina-enabled displays or external displays
 in full-screen mode.
 
 License
