@@ -28,8 +28,9 @@ public class Funnel : MonoBehaviour
 {
     #region Class constants and variables
 
-    // Render Event ID (0xfa9100 - 0xfa91ff)
-    const int RenderEventID = 0xfa9100;
+    // Render Event ID (0xfa9100 - 0xfa92ff)
+    const int PublishEventID = 0xfa9100;
+    const int ReleaseEventID = 0xfa9200;
 
     // Slot index counter.
     static int slotCount = 0;
@@ -48,7 +49,8 @@ public class Funnel : MonoBehaviour
 
     // Render texture which is to be sent.
     [System.NonSerialized]
-    public RenderTexture renderTexture;
+    public RenderTexture
+        renderTexture;
 
     #endregion
 
@@ -63,9 +65,6 @@ public class Funnel : MonoBehaviour
 
     [DllImport("Funnel")]
     static extern void FunnelSetFrameTexture (int slotIndex, string frameName, int textureID, int width, int height);
-
-    [DllImport("Funnel")]
-    static extern void FunnelReleaseSlot (int slotIndex);
 
     #endregion
 
@@ -87,7 +86,7 @@ public class Funnel : MonoBehaviour
     void OnDisable ()
     {
         // Release the slot.
-        FunnelReleaseSlot (slotIndex);
+        GL.IssuePluginEvent (ReleaseEventID + slotIndex);
     }
 
     void Update ()
@@ -96,7 +95,7 @@ public class Funnel : MonoBehaviour
         FunnelSetFrameTexture (slotIndex, gameObject.name, renderTexture.GetNativeTextureID (), screenWidth, screenHeight);
 
         // Call GL operations on the GL thread.
-        GL.IssuePluginEvent (RenderEventID + slotIndex);
+        GL.IssuePluginEvent (PublishEventID + slotIndex);
     }
 
     void OnGUI ()
