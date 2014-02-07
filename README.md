@@ -20,7 +20,7 @@ Setting Up
 ----------
 
 - [Download the plugin package]
-  (http://keijiro.github.io/Funnel/funnel-1.1.unitypackage).
+  (http://keijiro.github.io/Funnel/funnel-1.2.unitypackage).
 - Import the package into your project.
 - Add Funnel script component to a camera.
 
