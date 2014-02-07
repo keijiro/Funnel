@@ -49,53 +49,98 @@ public class Funnel : MonoBehaviour
 
     // Render texture which is to be sent.
     [System.NonSerialized]
-    public RenderTexture
-        renderTexture;
-
-    #endregion
-
-    #region Private variables
-
-    // Slot index for this server.
-    int slotIndex;
+    public RenderTexture renderTexture;
 
     #endregion
 
     #region Native plugin interface
-
+    
     [DllImport("Funnel")]
     static extern void FunnelSetFrameTexture (int slotIndex, string frameName, int textureID, int width, int height);
+    
+    #endregion
+    
+    #region Private variables and functions
+
+    // Slot index for this server.
+    int slotIndex = -1;
+
+    // Initialization.
+    void Setup ()
+    {
+        if (slotIndex < 0)
+        {
+            // Grab a slot.
+            slotIndex = slotCount++;
+        
+            // Assign the render texture to the camera.
+            camera.targetTexture = renderTexture;
+            camera.ResetAspect ();
+        }
+    }
+
+    // Finalization.
+    void Teardown ()
+    {
+        if (slotIndex >= 0)
+        {
+            // Release the slot.
+            GL.IssuePluginEvent (ReleaseEventID + slotIndex);
+            slotIndex = -1;
+
+            // Resign the render texture from the camera.
+            camera.targetTexture = null;
+            camera.ResetAspect();
+        }
+    }
+
+    // Coroutine for screen update.
+    IEnumerator Refreshing ()
+    {
+        // Initialize.
+        Setup ();
+
+        // Wait for one frame to update the rendering state.
+        yield return new WaitForEndOfFrame ();
+
+        while (enabled && slotIndex >= 0)
+        {
+            // Wait for the end of rendering.
+            yield return new WaitForEndOfFrame ();
+
+            // Make sure it's still running.
+            if (enabled && slotIndex >= 0)
+            {
+                // Set the previous frame to the slot.
+                FunnelSetFrameTexture (slotIndex, gameObject.name, renderTexture.GetNativeTextureID (), screenWidth, screenHeight);
+                
+                // Call GL operations on the GL thread.
+                GL.IssuePluginEvent (PublishEventID + slotIndex);
+            }
+        }
+
+        // Clean up.
+        Teardown ();
+    }
 
     #endregion
 
     #region MonoBehaviour functions
 
-    void Start ()
+    void Awake ()
     {
-        // Grab a slot.
-        slotIndex = slotCount++;
-
-        // Create a render texture and assign it to the camera.
+        // Create a render texture.
         renderTexture = new RenderTexture (screenWidth, screenHeight, 24);
-        camera.targetTexture = renderTexture;
+    }
 
-        // Reset the aspect ratio.
-        camera.ResetAspect ();
+    void OnEnable ()
+    {
+        StartCoroutine (Refreshing ());
     }
 
     void OnDisable ()
     {
-        // Release the slot.
-        GL.IssuePluginEvent (ReleaseEventID + slotIndex);
-    }
-
-    void Update ()
-    {
-        // Set the previous frame to the slot.
-        FunnelSetFrameTexture (slotIndex, gameObject.name, renderTexture.GetNativeTextureID (), screenWidth, screenHeight);
-
-        // Call GL operations on the GL thread.
-        GL.IssuePluginEvent (PublishEventID + slotIndex);
+        Teardown ();
     }
 
     void OnGUI ()
