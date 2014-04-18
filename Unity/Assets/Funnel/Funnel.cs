@@ -56,7 +56,7 @@ public class Funnel : MonoBehaviour
     #region Native plugin interface
     
     [DllImport("Funnel")]
-    static extern void FunnelSetFrameTexture (int slotIndex, string frameName, int textureID, int width, int height);
+    static extern void FunnelSetFrameTexture (int slotIndex, string frameName, int textureID, int width, int height, bool srgb);
     
     #endregion
     
@@ -103,6 +103,9 @@ public class Funnel : MonoBehaviour
         // Wait for one frame to update the rendering state.
         yield return new WaitForEndOfFrame ();
 
+        // Check if it should use sRGB.
+        var srgb = (QualitySettings.activeColorSpace == ColorSpace.Linear);
+
         while (enabled && slotIndex >= 0)
         {
             // Wait for the end of rendering.
@@ -112,7 +115,7 @@ public class Funnel : MonoBehaviour
             if (enabled && slotIndex >= 0)
             {
                 // Set the previous frame to the slot.
-                FunnelSetFrameTexture (slotIndex, gameObject.name, renderTexture.GetNativeTextureID (), screenWidth, screenHeight);
+                FunnelSetFrameTexture (slotIndex, gameObject.name, renderTexture.GetNativeTextureID (), screenWidth, screenHeight, srgb);
                 
                 // Call GL operations on the GL thread.
                 GL.IssuePluginEvent (PublishEventID + slotIndex);

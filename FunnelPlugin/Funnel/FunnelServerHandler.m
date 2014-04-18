@@ -6,6 +6,7 @@
 @synthesize serverName = _serverName;
 @synthesize frameTextureName = _frameTextureName;
 @synthesize frameTextureRect = _frameTextureRect;
+@synthesize useSRGBBuffer = _useSRGBBuffer;
 
 -(void)dealloc
 {

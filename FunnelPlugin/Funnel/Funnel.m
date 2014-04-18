@@ -24,7 +24,7 @@ OSSpinLock localLock = OS_SPINLOCK_INIT;
 #pragma mark Expoerted functions
 
 // Set a frame texture.
-void FunnelSetFrameTexture(int slotIndex, const char* frameNameCString, int textureName, int width, int height)
+void FunnelSetFrameTexture(int slotIndex, const char* frameNameCString, int textureName, int width, int height, bool srgb)
 {
     if (!servers) return;
     
@@ -46,6 +46,7 @@ void FunnelSetFrameTexture(int slotIndex, const char* frameNameCString, int text
     handler.serverName = [NSString stringWithUTF8String:frameNameCString];
     handler.frameTextureName = textureName;
     handler.frameTextureRect = NSMakeRect(0, 0, width, height);
+    handler.useSRGBBuffer = srgb;
     
     OSSpinLockUnlock(&localLock);
 }
@@ -95,7 +96,8 @@ void UnityRenderEvent(int eventID)
             // Create a Syphon server if not yet.
             if (!handler.syphonServer)
             {
-                SyphonServer *server = [[SyphonServer alloc] initWithName:handler.serverName context:CGLGetCurrentContext() options:nil];
+                NSDictionary *options = [NSDictionary dictionaryWithObject:[NSNumber numberWithBool:handler.useSRGBBuffer] forKey:SyphonServerOptionUseSRGBBuffer];
+                SyphonServer *server = [[SyphonServer alloc] initWithName:handler.serverName context:CGLGetCurrentContext() options:options];
                 handler.syphonServer = server;
                 [server release];
                 NSLog(@"Funnel: A Syphon server was created on slot %d.", slotIndex);
