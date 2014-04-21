@@ -42,6 +42,7 @@ public class Funnel : MonoBehaviour
     // Screen settings.
     public int screenWidth = 1280;
     public int screenHeight = 720;
+    public int antiAliasing = 1;
 
     // Editor settings.
     public bool drawGameView;
@@ -103,9 +104,6 @@ public class Funnel : MonoBehaviour
         // Wait for one frame to update the rendering state.
         yield return new WaitForEndOfFrame ();
 
-        // Check if it should use sRGB.
-        var srgb = (QualitySettings.activeColorSpace == ColorSpace.Linear);
-
         while (enabled && slotIndex >= 0)
         {
             // Wait for the end of rendering.
@@ -115,7 +113,7 @@ public class Funnel : MonoBehaviour
             if (enabled && slotIndex >= 0)
             {
                 // Set the previous frame to the slot.
-                FunnelSetFrameTexture (slotIndex, gameObject.name, renderTexture.GetNativeTextureID (), screenWidth, screenHeight, srgb);
+                FunnelSetFrameTexture (slotIndex, gameObject.name, renderTexture.GetNativeTextureID (), screenWidth, screenHeight, renderTexture.sRGB);
                 
                 // Call GL operations on the GL thread.
                 GL.IssuePluginEvent (PublishEventID + slotIndex);
@@ -134,6 +132,7 @@ public class Funnel : MonoBehaviour
     {
         // Create a render texture.
         renderTexture = new RenderTexture (screenWidth, screenHeight, 24);
+        renderTexture.antiAliasing = antiAliasing;
     }
 
     void OnEnable ()

@@ -27,6 +27,9 @@ using System.Collections;
 [CustomEditor(typeof(Funnel))]
 class FunnelEditor : Editor
 {
+    static string[] aaLabels = {"Off", "x2", "x4", "x8"};
+    static int[] aaValues = {1, 2, 4, 8};
+
     public override void OnInspectorGUI ()
     {
         var funnel = target as Funnel;
@@ -34,6 +37,7 @@ class FunnelEditor : Editor
         // Screen settings.
         funnel.screenWidth = EditorGUILayout.IntField ("Screen Width", funnel.screenWidth);
         funnel.screenHeight = EditorGUILayout.IntField ("Screen Height", funnel.screenHeight);
+        funnel.antiAliasing = EditorGUILayout.IntPopup ("Anti-Aliasing", funnel.antiAliasing, aaLabels, aaValues);
 
         // Preview settings.
         funnel.drawGameView = EditorGUILayout.Toggle ("Draw Game View", funnel.drawGameView);
