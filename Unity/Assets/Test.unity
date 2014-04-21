@@ -263,7 +263,6 @@ GameObject:
   m_Component:
   - 4: {fileID: 1005650499}
   - 20: {fileID: 1005650498}
-  - 114: {fileID: 1005650500}
   m_Layer: 0
   m_Name: Server View
   m_TagString: Untagged
@@ -311,19 +310,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
---- !u!114 &1005650500
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1005650497}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b23ddac3aa9340369f5b31637f87ccd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  framerate: 60
-  fixFramerate: 0
 --- !u!1 &1054180803
 GameObject:
   m_ObjectHideFlags: 0
@@ -1575,7 +1561,7 @@ Camera:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RenderingPath: -1
-  m_TargetTexture: {fileID: 8400000, guid: b5f72d0af77354e5cb9eef00bd226e71, type: 2}
+  m_TargetTexture: {fileID: 0}
   m_HDR: 0
   m_OcclusionCulling: 1
 --- !u!4 &1214858630
