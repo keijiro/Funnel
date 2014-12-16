@@ -30,37 +30,13 @@ class FunnelEditor : Editor
     static string[] aaLabels = {"Off", "x2", "x4", "x8"};
     static int[] aaValues = {1, 2, 4, 8};
 
-    public override void OnInspectorGUI ()
+    public override void OnInspectorGUI()
     {
         var funnel = target as Funnel;
-
-        // Screen settings.
-        funnel.screenWidth = EditorGUILayout.IntField ("Screen Width", funnel.screenWidth);
-        funnel.screenHeight = EditorGUILayout.IntField ("Screen Height", funnel.screenHeight);
-        funnel.antiAliasing = EditorGUILayout.IntPopup ("Anti-Aliasing", funnel.antiAliasing, aaLabels, aaValues);
-
-        // Preview settings.
-        funnel.drawGameView = EditorGUILayout.Toggle ("Draw Game View", funnel.drawGameView);
-
-        if (funnel.previewOnInspector = EditorGUILayout.Foldout (funnel.previewOnInspector, "Preview"))
-        {
-            if (EditorApplication.isPlaying)
-            {
-                var texture = funnel.renderTexture;
-                if (texture)
-                {
-                    EditorGUILayout.Space ();
-                    var rect = GUILayoutUtility.GetAspectRect (1.0f * texture.width / texture.height);
-                    EditorGUILayout.Space ();
-                    EditorGUI.DrawPreviewTexture (rect, texture);
-                    // Make it dirty to stay updated.
-                    EditorUtility.SetDirty (target);
-                }
-            }
-            else
-            {
-                EditorGUILayout.HelpBox("Available only on Play Mode", MessageType.None);
-            }
-        }
+        funnel.screenWidth = EditorGUILayout.IntField("Screen Width", funnel.screenWidth);
+        funnel.screenHeight = EditorGUILayout.IntField("Screen Height", funnel.screenHeight);
+        funnel.antiAliasing = EditorGUILayout.IntPopup("Anti-Aliasing", funnel.antiAliasing, aaLabels, aaValues);
+        funnel.discardAlpha = EditorGUILayout.Toggle("Discard Alpha", funnel.discardAlpha);
+        funnel.drawGameView = EditorGUILayout.Toggle("Draw Game View", funnel.drawGameView);
     }
 }

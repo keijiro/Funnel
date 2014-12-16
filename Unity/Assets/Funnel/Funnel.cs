@@ -43,10 +43,10 @@ public class Funnel : MonoBehaviour
     public int screenWidth = 1280;
     public int screenHeight = 720;
     public int antiAliasing = 1;
+    public bool discardAlpha = true;
 
     // Editor settings.
     public bool drawGameView;
-    public bool previewOnInspector;
 
     // Render texture which is to be sent.
     [System.NonSerialized]
@@ -57,7 +57,7 @@ public class Funnel : MonoBehaviour
     #region Native plugin interface
     
     [DllImport("Funnel")]
-    static extern void FunnelSetFrameTexture (int slotIndex, string frameName, int textureID, int width, int height, bool srgb);
+    static extern void FunnelSetFrameTexture (int slotIndex, string frameName, int textureID, int width, int height, bool srgb, bool discardAlpha);
     
     #endregion
     
@@ -113,7 +113,7 @@ public class Funnel : MonoBehaviour
             if (enabled && slotIndex >= 0)
             {
                 // Set the previous frame to the slot.
-                FunnelSetFrameTexture (slotIndex, gameObject.name, renderTexture.GetNativeTextureID (), screenWidth, screenHeight, renderTexture.sRGB);
+                FunnelSetFrameTexture (slotIndex, gameObject.name, renderTexture.GetNativeTextureID (), screenWidth, screenHeight, renderTexture.sRGB, discardAlpha);
                 
                 // Call GL operations on the GL thread.
                 GL.IssuePluginEvent (PublishEventID + slotIndex);
