@@ -1,5 +1,5 @@
 ﻿//
-// Funnel: Minimal Syphon Server Plugin for Unity
+// Funnel - Minimal Syphon Server Plugin for Unity
 //
 // Copyright (C) 2014 Keijiro Takahashi
 //
@@ -20,6 +20,7 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
+
 using UnityEngine;
 using UnityEditor;
 using System.Collections;
@@ -27,16 +28,44 @@ using System.Collections;
 [CustomEditor(typeof(Funnel))]
 class FunnelEditor : Editor
 {
-    static string[] aaLabels = {"Off", "x2", "x4", "x8"};
+    static GUIContent[] aaLabels = {
+        new GUIContent("Off"),
+        new GUIContent("x2"),
+        new GUIContent("x4"),
+        new GUIContent("x8")
+    };
+
     static int[] aaValues = {1, 2, 4, 8};
+
+    SerializedProperty propScreenWidth;
+    SerializedProperty propScreenHeight;
+    SerializedProperty propAntiAliasing;
+    SerializedProperty propAlphaChannel;
+    SerializedProperty propRenderMode;
+
+    void OnEnable()
+    {
+        propScreenWidth  = serializedObject.FindProperty("_screenWidth");
+        propScreenHeight = serializedObject.FindProperty("_screenHeight");
+        propAntiAliasing = serializedObject.FindProperty("_antiAliasing");
+        propAlphaChannel = serializedObject.FindProperty("_alphaChannel");
+        propRenderMode   = serializedObject.FindProperty("_renderMode");
+    }
 
     public override void OnInspectorGUI()
     {
-        var funnel = target as Funnel;
-        funnel.screenWidth = EditorGUILayout.IntField("Screen Width", funnel.screenWidth);
-        funnel.screenHeight = EditorGUILayout.IntField("Screen Height", funnel.screenHeight);
-        funnel.antiAliasing = EditorGUILayout.IntPopup("Anti-Aliasing", funnel.antiAliasing, aaLabels, aaValues);
-        funnel.discardAlpha = EditorGUILayout.Toggle("Discard Alpha", funnel.discardAlpha);
-        funnel.drawGameView = EditorGUILayout.Toggle("Draw Game View", funnel.drawGameView);
+        serializedObject.Update();
+
+        EditorGUILayout.PropertyField(propScreenWidth);
+        EditorGUILayout.PropertyField(propScreenHeight);
+        EditorGUILayout.IntPopup(propAntiAliasing, aaLabels, aaValues);
+        EditorGUILayout.PropertyField(propAlphaChannel);
+        EditorGUILayout.PropertyField(propRenderMode);
+
+        serializedObject.ApplyModifiedProperties();
+
+        if (GUI.changed)
+            foreach (var t in targets)
+                (t as Funnel).SendMessage("InvalidateResources");
     }
 }

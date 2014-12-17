@@ -1,5 +1,5 @@
 ﻿//
-// Funnel: Minimal Syphon Server Plugin for Unity
+// Funnel - Minimal Syphon Server Plugin for Unity
 //
 // Copyright (C) 2014 Keijiro Takahashi
 //
@@ -20,136 +20,232 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
+
 using UnityEngine;
 using System.Collections;
 using System.Runtime.InteropServices;
 
+[ExecuteInEditMode]
+[RequireComponent(typeof(Camera))]
 public class Funnel : MonoBehaviour
 {
-    #region Class constants and variables
+    #region Public Properties
 
-    // Render Event ID (0xfa9100 - 0xfa92ff)
+    // Screen settings.
+    [SerializeField] int _screenWidth = 1280;
+    [SerializeField] int _screenHeight = 720;
+    [SerializeField] int _antiAliasing = 1;
+    [SerializeField] bool _alphaChannel = false;
+
+    public int screenWidth {
+        get { return Mathf.Clamp(_screenWidth, 8, 8192); }
+        set { _screenWidth = value; _invalidated = true; }
+    }
+    public int screenHeight {
+        get { return Mathf.Clamp(_screenHeight, 8, 8192); }
+        set { _screenHeight = value; _invalidated = true; }
+    }
+    public int antiAliasing {
+        get { return _antiAliasing; }
+        set { _antiAliasing = value; _invalidated = true; }
+    }
+    public bool alphaChannel {
+        get { return _alphaChannel; }
+        set { _alphaChannel = value; }
+    }
+
+    // Render mode.
+    public enum RenderMode { SendOnly, RenderToTarget, PreviewOnGUI }
+    [SerializeField] RenderMode _renderMode;
+
+    public RenderMode renderMode {
+        get { return _renderMode; }
+        set { _renderMode = value; }
+    }
+
+    // Screen buffer.
+    RenderTexture _renderTexture;
+
+    public Texture renderTexture {
+        get { return _renderTexture; }
+    }
+
+    #endregion
+
+    #region Internal Class Members
+
+    // Render event ID (0xfa9100 - 0xfa92ff).
     const int PublishEventID = 0xfa9100;
     const int ReleaseEventID = 0xfa9200;
 
     // Slot index counter.
-    static int slotCount = 0;
+    static int _slotCount = 0;
 
     #endregion
 
-    #region Public properties
+    #region Internal Instance Members
 
-    // Screen settings.
-    public int screenWidth = 1280;
-    public int screenHeight = 720;
-    public int antiAliasing = 1;
-    public bool discardAlpha = true;
+    // Gamma correction shader (used in preview display).
+    [SerializeField] Shader _gammaCorrectShader;
+    Material _gammaCorrectMaterial;
 
-    // Editor settings.
-    public bool drawGameView;
+    // Slot index of this server.
+    int _slotIndex = -1;
 
-    // Render texture which is to be sent.
-    [System.NonSerialized]
-    public RenderTexture renderTexture;
+    // Resource invalidation flag.
+    bool _invalidated;
 
     #endregion
 
-    #region Native plugin interface
-    
+    #region Native Plugin Interface
+
     [DllImport("Funnel")]
-    static extern void FunnelSetFrameTexture (int slotIndex, string frameName, int textureID, int width, int height, bool srgb, bool discardAlpha);
-    
+    static extern void FunnelSetFrameTexture(int slotIndex, string frameName, int textureID, int width, int height, bool srgb, bool discardAlpha);
+
     #endregion
-    
-    #region Private variables and functions
 
-    // Slot index for this server.
-    int slotIndex = -1;
+    #region Private Properties and Functions
 
-    // Initialization.
-    void Setup ()
-    {
-        if (slotIndex < 0)
-        {
-            // Grab a slot.
-            slotIndex = slotCount++;
-        
-            // Assign the render texture to the camera.
-            camera.targetTexture = renderTexture;
-            camera.ResetAspect ();
+    // Screen rect for preview display.
+    Rect PreviewRect {
+        get {
+            if ((float)Screen.width / Screen.height < (float)screenWidth / screenHeight)
+            {
+                var margin = Screen.height - screenHeight * Screen.width / screenWidth;
+                return new Rect(0, margin / 2, Screen.width, Screen.height - margin);
+            }
+            else
+            {
+                var margin = Screen.width - screenWidth * Screen.height / screenHeight;
+                return new Rect(margin / 2, 0, Screen.width - margin, Screen.height);
+            }
         }
     }
 
-    // Finalization.
-    void Teardown ()
+    // Sets up resources.
+    void SetUpResources()
     {
-        if (slotIndex >= 0)
-        {
-            // Release the slot.
-            GL.IssuePluginEvent (ReleaseEventID + slotIndex);
-            slotIndex = -1;
+        // Grab a slot.
+        if (_slotIndex < 0)
+            _slotIndex = _slotCount++;
 
-            // Resign the render texture from the camera.
+        // Prepare gamma correction shader.
+        if (_gammaCorrectMaterial == null && _gammaCorrectShader)
+        {
+            _gammaCorrectMaterial = new Material(_gammaCorrectShader);
+            _gammaCorrectMaterial.hideFlags = HideFlags.DontSave;
+        }
+
+        // Make screen buffer.
+        if (_renderTexture == null && _screenWidth > 0 && _screenHeight > 0)
+        {
+            _renderTexture = new RenderTexture(screenWidth, screenHeight, 24);
+            _renderTexture.hideFlags = HideFlags.DontSave;
+            _renderTexture.antiAliasing = antiAliasing;
+        }
+
+        // Override the camera.
+        if (_renderTexture && camera.targetTexture != _renderTexture)
+        {
+            camera.targetTexture = _renderTexture;
+            camera.ResetAspect();
+        }
+    }
+
+    // Resource invalidation.
+    void InvalidateResources()
+    {
+        _invalidated = true;
+    }
+
+    #endregion
+
+    #region MonoBehaviour Functions
+
+    void Awake()
+    {
+        SetUpResources();
+    }
+
+    void Start()
+    {
+        SetUpResources();
+    }
+
+    void OnEnable()
+    {
+        SetUpResources();
+    }
+
+    void OnDisable()
+    {
+        // Release the slot.
+        if (_slotIndex >= 0)
+        {
+            GL.IssuePluginEvent(ReleaseEventID + _slotIndex);
+            _slotIndex = -1;
+        }
+
+        // Release the camera.
+        if (camera.targetTexture != null && camera.targetTexture == _renderTexture)
+        {
             camera.targetTexture = null;
             camera.ResetAspect();
         }
     }
 
-    // Coroutine for screen update.
-    IEnumerator Refreshing ()
+    void Update()
     {
-        // Initialize.
-        Setup ();
-
-        // Wait for one frame to update the rendering state.
-        yield return new WaitForEndOfFrame ();
-
-        while (enabled && slotIndex >= 0)
+        // Reset properties of render texture if it has been invalidated.
+        if (_invalidated && _renderTexture)
         {
-            // Wait for the end of rendering.
-            yield return new WaitForEndOfFrame ();
+            _renderTexture.Release();
 
-            // Make sure it's still running.
-            if (enabled && slotIndex >= 0)
-            {
-                // Set the previous frame to the slot.
-                FunnelSetFrameTexture (slotIndex, gameObject.name, renderTexture.GetNativeTextureID (), screenWidth, screenHeight, renderTexture.sRGB, discardAlpha);
-                
-                // Call GL operations on the GL thread.
-                GL.IssuePluginEvent (PublishEventID + slotIndex);
-            }
+            _renderTexture.width = screenWidth;
+            _renderTexture.height = screenHeight;
+            _renderTexture.antiAliasing = antiAliasing;
+
+            if (camera.targetTexture != null && camera.targetTexture == _renderTexture)
+                camera.ResetAspect();
+
+            _invalidated = false;
         }
-
-        // Clean up.
-        Teardown ();
     }
 
-    #endregion
-
-    #region MonoBehaviour functions
-
-    void Awake ()
+    void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
-        // Create a render texture.
-        renderTexture = new RenderTexture (screenWidth, screenHeight, 24);
-        renderTexture.antiAliasing = antiAliasing;
+        //SetUpResources();
+
+        if (_slotIndex >= 0 && _renderTexture)
+        {
+            if (Application.isEditor || _renderMode != RenderMode.SendOnly)
+            {
+                // Blit and publish.
+                Graphics.Blit(source, destination);
+                FunnelSetFrameTexture(_slotIndex, gameObject.name, destination.GetNativeTextureID(), screenWidth, screenHeight, _renderTexture.sRGB, !_alphaChannel);
+            }
+            else
+            {
+                // Publish only.
+                FunnelSetFrameTexture(_slotIndex, gameObject.name, source.GetNativeTextureID(), screenWidth, screenHeight, _renderTexture.sRGB, !_alphaChannel);
+            }
+
+            // Call the GL operation on the GL thread.
+            GL.IssuePluginEvent(PublishEventID + _slotIndex);
+        }
+        else
+        {
+            // Resources are not ready: just blit.
+            Graphics.Blit(source, destination);
+        }
     }
 
-    void OnEnable ()
+    void OnGUI()
     {
-        StartCoroutine (Refreshing ());
-    }
-
-    void OnDisable ()
-    {
-        Teardown ();
-    }
-
-    void OnGUI ()
-    {
-        // Draw the render texture on the game view.
-        if (drawGameView)
-            GUI.DrawTexture (new Rect (0, 0, Screen.width, Screen.height), renderTexture, ScaleMode.ScaleToFit, false);
+        // Preview display.
+        if (_renderMode == RenderMode.PreviewOnGUI && Event.current.type.Equals(EventType.Repaint))
+            if (_renderTexture && _gammaCorrectMaterial)
+                Graphics.DrawTexture(PreviewRect, _renderTexture, _renderTexture.sRGB ? _gammaCorrectMaterial : null);
     }
 
     #endregion

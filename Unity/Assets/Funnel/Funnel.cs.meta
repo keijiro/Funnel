@@ -2,7 +2,9 @@ fileFormatVersion: 2
 guid: 2d3c0b01ad228439a9d89134216071c6
 MonoImporter:
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - _gammaCorrectShader: {fileID: 4800000, guid: 61221cb867c7a439fba6da3231ff64f7,
+      type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
