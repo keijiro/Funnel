@@ -24,11 +24,11 @@ Setting Up
 Basically that's all! After adding the Funnel script to a camera, it sets up
 a Syphon server and starts sharing rendered frames with Syphon clients.
 
-It gives a name to the Syphon server in the following manner.
+The name of the Syphon server will be determined in the following manner:
 
-  [[Process Name]]-[[Game Object Name]]
+    [Process Name]-[Game Object Name]
 
-It's useful to identify servers when there are more than two servers.
+It's useful to identify the servers when there are more than two servers.
 
 Properties
 ----------
@@ -37,22 +37,24 @@ There are several properties in the Funnel component.
 
 ![Inspector][Inspector]
 
-*Screen Width/Height, Anti Aliasing* - Resolution settings of the shared frames.
+**Screen Width/Height, Anti Aliasing** - Resolution settings of the shared
+frames.
 
-*Alpha Channel* - It determines if the alpha channel of the frames will be
-shared. If it's set to off, it clears the alpha channel before sharing it.
+**Alpha Channel** - It determines if the alpha channel of the frames will be
+shared. If it's set to off, the server will clear the alpha channel before
+sharing it.
 
-In most cases an alpha channel of a rendered frame is filled with garbage, and
-it causes problems when compositing on Syphon client applications. And therefore
-it's recommended to be kept off unless a special setup is used.
+In most cases, an alpha channel of a rendered frame is filled with garbage and
+it causes problems when compositing the frames on Syphon client applications.
+Therefore it's recommended to be kept off unless a special setup is used.
 
-*Render Mode* - It determines how the frames are shared.
-- Send Only - It only sends the frame and doesn't keep it. In this mode,
-rendered frames are only available on Syphon clients and there is no way to use
-them on Unity side. This mode is slightly faster than the others.
-- Render To Target - It sends the frame and keep it in a Render Texture.
-- Preview On GUI - It sends the frame and display it on the Game View using
-an onGUI function.
+**Render Mode** - It determines how the frames are shared.
+- Send Only - It only sends the frames and doesn't keep them. In this mode,
+rendered frames are only available on Syphon clients and there is no way to
+reuse them in Unity. This mode is slightly faster than the others.
+- Render To Target - It sends the frames and keep them in a Render Texture.
+- Preview On GUI - It sends the frames and display them on the Game View
+using OnGUI function.
 
 License
 -------
