@@ -38,20 +38,30 @@ public class Funnel : MonoBehaviour
     [SerializeField] bool _alphaChannel = false;
 
     public int screenWidth {
-        get { return Mathf.Clamp(_screenWidth, 8, 8192); }
-        set { _screenWidth = value; _invalidated = true; }
+        get { return Mathf.Clamp(_screenWidth, 8, 4096); }
+        set { _screenWidth = value; }
     }
+
     public int screenHeight {
-        get { return Mathf.Clamp(_screenHeight, 8, 8192); }
-        set { _screenHeight = value; _invalidated = true; }
+        get { return Mathf.Clamp(_screenHeight, 8, 4096); }
+        set { _screenHeight = value; }
     }
+
     public int antiAliasing {
         get { return _antiAliasing; }
-        set { _antiAliasing = value; _invalidated = true; }
+        set { _antiAliasing = value; }
     }
+
     public bool alphaChannel {
         get { return _alphaChannel; }
-        set { _alphaChannel = value; }
+        set {
+            // Reset the server when updating.
+            if (_alphaChannel != value)
+            {
+                _alphaChannel = value;
+                ResetServerState();
+            }
+        }
     }
 
     // Render mode.
@@ -92,19 +102,34 @@ public class Funnel : MonoBehaviour
     // Slot index of this server.
     int _slotIndex = -1;
 
-    // Resource invalidation flag.
-    bool _invalidated;
-
     #endregion
 
     #region Native Plugin Interface
 
     [DllImport("Funnel")]
-    static extern void FunnelSetFrameTexture(int slotIndex, string frameName, int textureID, int width, int height, bool srgb, bool discardAlpha);
+    static extern void FunnelSetFrameTexture(
+        int slotIndex,
+        string frameName,
+        int textureID,
+        int width, int height,
+        bool srgbColor, bool discardAlpha
+    );
 
     #endregion
 
     #region Private Properties and Functions
+
+    // Check if the screen settings are changed.
+    bool ScreenSettingsChanged
+    {
+        get {
+            return _renderTexture && (
+                _renderTexture.width != screenWidth ||
+                _renderTexture.height != screenHeight ||
+                _renderTexture.antiAliasing != antiAliasing
+            );
+        }
+    }
 
     // Screen rect for preview display.
     Rect PreviewRect {
@@ -125,7 +150,7 @@ public class Funnel : MonoBehaviour
     // Sets up resources.
     void SetUpResources()
     {
-        // Grab a slot.
+        // Grab a new slot.
         if (_slotIndex < 0)
             _slotIndex = _slotCount++;
 
@@ -152,10 +177,11 @@ public class Funnel : MonoBehaviour
         }
     }
 
-    // Resource invalidation.
-    void InvalidateResources()
+    // Reset the state of the Syphon server.
+    void ResetServerState()
     {
-        _invalidated = true;
+        if (_slotIndex >= 0)
+            GL.IssuePluginEvent(ReleaseEventID + _slotIndex);
     }
 
     #endregion
@@ -181,10 +207,7 @@ public class Funnel : MonoBehaviour
     {
         // Release the slot.
         if (_slotIndex >= 0)
-        {
             GL.IssuePluginEvent(ReleaseEventID + _slotIndex);
-            _slotIndex = -1;
-        }
 
         // Release the camera.
         if (camera.targetTexture != null && camera.targetTexture == _renderTexture)
@@ -194,10 +217,11 @@ public class Funnel : MonoBehaviour
         }
     }
 
+
     void Update()
     {
-        // Reset properties of render texture if it has been invalidated.
-        if (_invalidated && _renderTexture)
+        // Update the screen buffer when the screen settings are changed.
+        if (ScreenSettingsChanged)
         {
             _renderTexture.Release();
 
@@ -205,29 +229,37 @@ public class Funnel : MonoBehaviour
             _renderTexture.height = screenHeight;
             _renderTexture.antiAliasing = antiAliasing;
 
-            if (camera.targetTexture != null && camera.targetTexture == _renderTexture)
+            if (camera.targetTexture && camera.targetTexture == _renderTexture)
                 camera.ResetAspect();
-
-            _invalidated = false;
         }
     }
 
     void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
-        //SetUpResources();
-
         if (_slotIndex >= 0 && _renderTexture)
         {
             if (Application.isEditor || _renderMode != RenderMode.SendOnly)
             {
                 // Blit and publish.
                 Graphics.Blit(source, destination);
-                FunnelSetFrameTexture(_slotIndex, gameObject.name, destination.GetNativeTextureID(), screenWidth, screenHeight, _renderTexture.sRGB, !_alphaChannel);
+                FunnelSetFrameTexture(
+                    _slotIndex,
+                    gameObject.name,
+                    destination.GetNativeTextureID(),
+                    screenWidth, screenHeight,
+                    _renderTexture.sRGB, !_alphaChannel
+                );
             }
             else
             {
                 // Publish only.
-                FunnelSetFrameTexture(_slotIndex, gameObject.name, source.GetNativeTextureID(), screenWidth, screenHeight, _renderTexture.sRGB, !_alphaChannel);
+                FunnelSetFrameTexture(
+                    _slotIndex,
+                    gameObject.name,
+                    source.GetNativeTextureID(),
+                    screenWidth, screenHeight,
+                    _renderTexture.sRGB, !_alphaChannel
+                );
             }
 
             // Call the GL operation on the GL thread.
@@ -243,9 +275,15 @@ public class Funnel : MonoBehaviour
     void OnGUI()
     {
         // Preview display.
-        if (_renderMode == RenderMode.PreviewOnGUI && Event.current.type.Equals(EventType.Repaint))
-            if (_renderTexture && _gammaCorrectMaterial)
-                Graphics.DrawTexture(PreviewRect, _renderTexture, _renderTexture.sRGB ? _gammaCorrectMaterial : null);
+        if (_renderMode == RenderMode.PreviewOnGUI &&
+            Event.current.type.Equals(EventType.Repaint) &&
+            _renderTexture && _gammaCorrectMaterial)
+        {
+            Graphics.DrawTexture(
+                PreviewRect, _renderTexture,
+                _renderTexture.sRGB ? _gammaCorrectMaterial : null
+            );
+        }
     }
 
     #endregion

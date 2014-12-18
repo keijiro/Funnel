@@ -59,13 +59,17 @@ class FunnelEditor : Editor
         EditorGUILayout.PropertyField(propScreenWidth);
         EditorGUILayout.PropertyField(propScreenHeight);
         EditorGUILayout.IntPopup(propAntiAliasing, aaLabels, aaValues);
+
+        EditorGUI.BeginChangeCheck();
         EditorGUILayout.PropertyField(propAlphaChannel);
+        var changed = EditorGUI.EndChangeCheck();
+
         EditorGUILayout.PropertyField(propRenderMode);
 
         serializedObject.ApplyModifiedProperties();
 
-        if (GUI.changed)
+        if (changed)
             foreach (var t in targets)
-                (t as Funnel).SendMessage("InvalidateResources");
+                (t as Funnel).SendMessage("ResetServerState");
     }
 }
