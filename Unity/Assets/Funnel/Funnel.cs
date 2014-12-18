@@ -69,7 +69,7 @@ public class Funnel : MonoBehaviour
 
     // Render mode.
     public enum RenderMode { SendOnly, RenderToTarget, PreviewOnGUI }
-    [SerializeField] RenderMode _renderMode;
+    [SerializeField] RenderMode _renderMode = RenderMode.RenderToTarget;
 
     public RenderMode renderMode {
         get { return _renderMode; }
