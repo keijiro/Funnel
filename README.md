@@ -1,52 +1,58 @@
 Funnel
 ======
 
-![Screenshot](http://keijiro.github.io/Funnel/screenshot.png)
+![Screenshot][Screenshot]
 
-*Funnel* is a minimal [Syphon](http://syphon.v002.info) server plugin for
-Unity Pro. It allows Unity to share frames with other application in
-realtime. It works not only on built apps but also on the Editor, therefore you
-can edit a scene on the Editor and simultaneously show it on Syphon clients
-(e.g. MadMapper, VDMX, et cetera).
+*Funnel* is a Syphon server plugin for [Unity][Unity]. It allows Unity to share
+rendered frames with other graphics applications that supports [Syphon][Syphon]
+technology (e.g., [MadMapper][MadMapper], [VDMX][VDMX]) at almost zero
+performance loss.
 
 System Requirements
 -------------------
 
 - Mac OS X
 - Unity Pro
-- Syphon client app.
 
 Setting Up
 ----------
 
-- [Download the plugin package]
-  (https://github.com/keijiro/Funnel/raw/master/Funnel.unitypackage).
-- Import the package into your project.
-- Add Funnel script component to a camera.
+- [Download the plugin package][Package]
+- Import the package into a project.
+- Add the Funnel script to a camera.
 
-Basically that's all! It publishes frames on this camera in play mode.
-It uses the name of the game object as the name of the Syphon server, and
-therefore you can identify servers with their names.
+Basically that's all! After adding the Funnel script to a camera, it sets up
+a Syphon server and starts sharing rendered frames with Syphon clients.
 
-Options
--------
+It gives a name to the Syphon server in the following manner.
 
-There are some options you can see on the inspector.
+  [[Process Name]]-[[Game Object Name]]
 
-![Inspector](http://keijiro.github.io/Funnel/inspector.png)
+It's useful to identify servers when there are more than two servers.
 
-- Screen Width/Height - the size of frames published to Syphon clients.
-- Draw Game View - draws the frames on the game view. If this option is
-  disabled, the frames on this camera is only viewable on Syphon clients.
-- Preview - shows the frames on this camera (on very low frame rate).
+Properties
+----------
 
-Related Project
----------------
+There are several properties in the Funnel component.
 
-[Symon](https://github.com/keijiro/Symon) is a minimal Syphon client app
-which is designed to use in combination with Funnel. It allows the Unity
-Editor to show frames on Retina-enabled displays or external displays
-in full-screen mode.
+![Inspector][Inspector]
+
+*Screen Width/Height, Anti Aliasing* - Resolution settings of the shared frames.
+
+*Alpha Channel* - It determines if the alpha channel of the frames will be
+shared. If it's set to off, it clears the alpha channel before sharing it.
+
+In most cases an alpha channel of a rendered frame is filled with garbage, and
+it causes problems when compositing on Syphon client applications. And therefore
+it's recommended to be kept off unless a special setup is used.
+
+*Render Mode* - It determines how the frames are shared.
+- Send Only - It only sends the frame and doesn't keep it. In this mode,
+rendered frames are only available on Syphon clients and there is no way to use
+them on Unity side. This mode is slightly faster than the others.
+- Render To Target - It sends the frame and keep it in a Render Texture.
+- Preview On GUI - It sends the frame and display it on the Game View using
+an onGUI function.
 
 License
 -------
@@ -69,3 +75,11 @@ FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+[Screenshot]: http://keijiro.github.io/Funnel/screenshot.png
+[Inspector]:  http://keijiro.github.io/Funnel/inspector.png
+[Package]:    https://github.com/keijiro/Funnel/raw/master/Funnel.unitypackage
+[Unity]:      http://unity3d.com
+[Syphon]:     http://syphon.v002.info
+[VDMX]:       http://vidvox.net
+[MadMapper]:  http://madmapper.com
