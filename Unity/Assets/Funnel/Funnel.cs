@@ -25,8 +25,11 @@ using UnityEngine;
 using System.Collections;
 using System.Runtime.InteropServices;
 
+namespace Funnel {
+
 [ExecuteInEditMode]
 [RequireComponent(typeof(Camera))]
+[AddComponentMenu("Rendering/Syphon/Funnel")]
 public class Funnel : MonoBehaviour
 {
     #region Public Properties
@@ -288,3 +291,5 @@ public class Funnel : MonoBehaviour
 
     #endregion
 }
+
+} // namespace Funnel

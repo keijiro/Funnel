@@ -25,6 +25,8 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections;
 
+namespace Funnel {
+
 [CustomEditor(typeof(Funnel))]
 class FunnelEditor : Editor
 {
@@ -73,3 +75,5 @@ class FunnelEditor : Editor
                 (t as Funnel).SendMessage("ResetServerState");
     }
 }
+
+} // namespace Funnel
