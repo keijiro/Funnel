@@ -1,5 +1,5 @@
 ﻿//
-// Funnel: Minimal Syphon Server Plugin for Unity
+// Funnel - Minimal Syphon Server Plugin for Unity
 //
 // Copyright (C) 2014 Keijiro Takahashi
 //
@@ -20,47 +20,60 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
+
 using UnityEngine;
 using UnityEditor;
 using System.Collections;
 
+namespace Funnel {
+
 [CustomEditor(typeof(Funnel))]
 class FunnelEditor : Editor
 {
-    static string[] aaLabels = {"Off", "x2", "x4", "x8"};
+    static GUIContent[] aaLabels = {
+        new GUIContent("Off"),
+        new GUIContent("x2"),
+        new GUIContent("x4"),
+        new GUIContent("x8")
+    };
+
     static int[] aaValues = {1, 2, 4, 8};
 
-    public override void OnInspectorGUI ()
+    SerializedProperty propScreenWidth;
+    SerializedProperty propScreenHeight;
+    SerializedProperty propAntiAliasing;
+    SerializedProperty propAlphaChannel;
+    SerializedProperty propRenderMode;
+
+    void OnEnable()
     {
-        var funnel = target as Funnel;
+        propScreenWidth  = serializedObject.FindProperty("_screenWidth");
+        propScreenHeight = serializedObject.FindProperty("_screenHeight");
+        propAntiAliasing = serializedObject.FindProperty("_antiAliasing");
+        propAlphaChannel = serializedObject.FindProperty("_alphaChannel");
+        propRenderMode   = serializedObject.FindProperty("_renderMode");
+    }
 
-        // Screen settings.
-        funnel.screenWidth = EditorGUILayout.IntField ("Screen Width", funnel.screenWidth);
-        funnel.screenHeight = EditorGUILayout.IntField ("Screen Height", funnel.screenHeight);
-        funnel.antiAliasing = EditorGUILayout.IntPopup ("Anti-Aliasing", funnel.antiAliasing, aaLabels, aaValues);
+    public override void OnInspectorGUI()
+    {
+        serializedObject.Update();
 
-        // Preview settings.
-        funnel.drawGameView = EditorGUILayout.Toggle ("Draw Game View", funnel.drawGameView);
+        EditorGUILayout.PropertyField(propScreenWidth);
+        EditorGUILayout.PropertyField(propScreenHeight);
+        EditorGUILayout.IntPopup(propAntiAliasing, aaLabels, aaValues);
 
-        if (funnel.previewOnInspector = EditorGUILayout.Foldout (funnel.previewOnInspector, "Preview"))
-        {
-            if (EditorApplication.isPlaying)
-            {
-                var texture = funnel.renderTexture;
-                if (texture)
-                {
-                    EditorGUILayout.Space ();
-                    var rect = GUILayoutUtility.GetAspectRect (1.0f * texture.width / texture.height);
-                    EditorGUILayout.Space ();
-                    EditorGUI.DrawPreviewTexture (rect, texture);
-                    // Make it dirty to stay updated.
-                    EditorUtility.SetDirty (target);
-                }
-            }
-            else
-            {
-                EditorGUILayout.HelpBox("Available only on Play Mode", MessageType.None);
-            }
-        }
+        EditorGUI.BeginChangeCheck();
+        EditorGUILayout.PropertyField(propAlphaChannel);
+        var changed = EditorGUI.EndChangeCheck();
+
+        EditorGUILayout.PropertyField(propRenderMode);
+
+        serializedObject.ApplyModifiedProperties();
+
+        if (changed)
+            foreach (var t in targets)
+                (t as Funnel).SendMessage("ResetServerState");
     }
 }
+
+} // namespace Funnel
