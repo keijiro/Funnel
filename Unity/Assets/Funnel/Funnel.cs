@@ -1,7 +1,7 @@
 ﻿//
-// Funnel - Minimal Syphon Server Plugin for Unity
+// Funnel - Syphon Server Plugin for Unity
 //
-// Copyright (C) 2014 Keijiro Takahashi
+// Copyright (C) 2014, 2015 Keijiro Takahashi
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -173,6 +173,7 @@ public class Funnel : MonoBehaviour
         }
 
         // Override the camera.
+        var camera = GetComponent<Camera>();
         if (_renderTexture && camera.targetTexture != _renderTexture)
         {
             camera.targetTexture = _renderTexture;
@@ -213,6 +214,7 @@ public class Funnel : MonoBehaviour
             GL.IssuePluginEvent(ReleaseEventID + _slotIndex);
 
         // Release the camera.
+        var camera = GetComponent<Camera>();
         if (camera.targetTexture != null && camera.targetTexture == _renderTexture)
         {
             camera.targetTexture = null;
@@ -232,6 +234,7 @@ public class Funnel : MonoBehaviour
             _renderTexture.height = screenHeight;
             _renderTexture.antiAliasing = antiAliasing;
 
+            var camera = GetComponent<Camera>();
             if (camera.targetTexture && camera.targetTexture == _renderTexture)
                 camera.ResetAspect();
         }
@@ -248,7 +251,7 @@ public class Funnel : MonoBehaviour
                 FunnelSetFrameTexture(
                     _slotIndex,
                     gameObject.name,
-                    destination.GetNativeTextureID(),
+                    (int)destination.GetNativeTexturePtr(),
                     screenWidth, screenHeight,
                     _renderTexture.sRGB, !_alphaChannel
                 );
@@ -259,7 +262,7 @@ public class Funnel : MonoBehaviour
                 FunnelSetFrameTexture(
                     _slotIndex,
                     gameObject.name,
-                    source.GetNativeTextureID(),
+                    (int)source.GetNativeTexturePtr(),
                     screenWidth, screenHeight,
                     _renderTexture.sRGB, !_alphaChannel
                 );
