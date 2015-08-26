@@ -22,7 +22,6 @@
 //
 
 using UnityEngine;
-using System.Collections;
 using System.Runtime.InteropServices;
 
 namespace Funnel {
@@ -34,19 +33,18 @@ public class Funnel : MonoBehaviour
 {
     #region Public Properties
 
-    // Screen settings.
     [SerializeField] int _screenWidth = 1280;
     [SerializeField] int _screenHeight = 720;
     [SerializeField] int _antiAliasing = 1;
     [SerializeField] bool _alphaChannel = false;
 
     public int screenWidth {
-        get { return Mathf.Clamp(_screenWidth, 8, 4096); }
+        get { return Mathf.Clamp(_screenWidth, 8, 8192); }
         set { _screenWidth = value; }
     }
 
     public int screenHeight {
-        get { return Mathf.Clamp(_screenHeight, 8, 4096); }
+        get { return Mathf.Clamp(_screenHeight, 8, 8192); }
         set { _screenHeight = value; }
     }
 
@@ -58,7 +56,7 @@ public class Funnel : MonoBehaviour
     public bool alphaChannel {
         get { return _alphaChannel; }
         set {
-            // Reset the server when updating.
+            // Reset the server on update.
             if (_alphaChannel != value)
             {
                 _alphaChannel = value;
@@ -67,7 +65,6 @@ public class Funnel : MonoBehaviour
         }
     }
 
-    // Render mode.
     public enum RenderMode { SendOnly, RenderToTarget, PreviewOnGUI }
     [SerializeField] RenderMode _renderMode = RenderMode.RenderToTarget;
 
@@ -76,7 +73,6 @@ public class Funnel : MonoBehaviour
         set { _renderMode = value; }
     }
 
-    // Screen buffer.
     RenderTexture _renderTexture;
 
     public Texture renderTexture {
@@ -87,22 +83,22 @@ public class Funnel : MonoBehaviour
 
     #region Internal Class Members
 
-    // Render event ID (0xfa9100 - 0xfa92ff).
+    // Render event ID (0xfa9100 - 0xfa92ff)
     const int PublishEventID = 0xfa9100;
     const int ReleaseEventID = 0xfa9200;
 
-    // Slot index counter.
+    // Slot index counter
     static int _slotCount = 0;
 
     #endregion
 
     #region Internal Instance Members
 
-    // Gamma correction shader (used in preview display).
+    // Gamma correction shader
     [SerializeField] Shader _gammaCorrectShader;
     Material _gammaCorrectMaterial;
 
-    // Slot index of this server.
+    // Slot index for this server
     int _slotIndex = -1;
 
     #endregion
@@ -134,7 +130,7 @@ public class Funnel : MonoBehaviour
         }
     }
 
-    // Screen rect for preview display.
+    // Get the screen rect for preview.
     Rect PreviewRect {
         get {
             if ((float)Screen.width / Screen.height < (float)screenWidth / screenHeight)
@@ -150,21 +146,21 @@ public class Funnel : MonoBehaviour
         }
     }
 
-    // Sets up resources.
+    // Set up the internal resources.
     void SetUpResources()
     {
         // Grab a new slot.
         if (_slotIndex < 0)
             _slotIndex = _slotCount++;
 
-        // Prepare gamma correction shader.
+        // Prepare the gamma correction shader.
         if (_gammaCorrectMaterial == null && _gammaCorrectShader)
         {
             _gammaCorrectMaterial = new Material(_gammaCorrectShader);
             _gammaCorrectMaterial.hideFlags = HideFlags.DontSave;
         }
 
-        // Make screen buffer.
+        // Make a screen buffer.
         if (_renderTexture == null && _screenWidth > 0 && _screenHeight > 0)
         {
             _renderTexture = new RenderTexture(screenWidth, screenHeight, 24);
@@ -222,7 +218,6 @@ public class Funnel : MonoBehaviour
         }
     }
 
-
     void Update()
     {
         // Update the screen buffer when the screen settings are changed.
@@ -268,7 +263,7 @@ public class Funnel : MonoBehaviour
                 );
             }
 
-            // Call the GL operation on the GL thread.
+            // Push a plugin event to publish the screen.
             GL.IssuePluginEvent(PublishEventID + _slotIndex);
         }
         else
@@ -280,7 +275,6 @@ public class Funnel : MonoBehaviour
 
     void OnGUI()
     {
-        // Preview display.
         if (_renderMode == RenderMode.PreviewOnGUI &&
             Event.current.type.Equals(EventType.Repaint) &&
             _renderTexture && _gammaCorrectMaterial)
