@@ -4,62 +4,57 @@ Funnel
 ![Screenshot][Screenshot]
 
 *Funnel* is a Syphon server plugin for [Unity][Unity]. It allows Unity to share
-rendered frames with other graphics applications that supports [Syphon][Syphon]
-technology (e.g., [MadMapper][MadMapper], [VDMX][VDMX]) at almost zero
+rendered frames with other applications that supports the [Syphon][Syphon]
+protocol (e.g., [MadMapper][MadMapper], [VDMX][VDMX]) at almost zero
 performance loss.
 
 System Requirements
 -------------------
 
-- Mac OS X
-- Unity Pro
+- Mac OS X 10.6 (Snow Leopard) or later.
+- Unity 5.0 or later.
 
 Setting Up
 ----------
 
-- [Download the plugin package][Package]
-- Import the package into a project.
-- Add the Funnel script to a camera.
+- Download and import [the plugin package][Package].
+- Add the Funnel script to cameras that share rendered frames.
 
-Basically that's all! After adding the Funnel script to a camera, it sets up
-a Syphon server and starts sharing rendered frames with Syphon clients.
+Basically that's all! It automatically sets up a Syphon server and starts
+publishing rendered frames to Syphon client applications.
 
-The name of the Syphon server will be determined in the following manner:
+The name of the Syphon server is set in the following manner:
 
     [Process Name]-[Game Object Name]
 
-It's useful to identify the servers when there are more than two servers.
+It's useful to identify the server on the client side.
 
 Properties
 ----------
 
-There are several properties in the Funnel component.
-
 ![Inspector][Inspector]
 
-**Screen Width/Height, Anti Aliasing** - Resolution settings of the shared
-frames.
+**Screen Width/Height, Anti Aliasing** - Screen resolution of the shared frames.
 
-**Alpha Channel** - It determines if the alpha channel of the frames will be
-shared. If it's set to off, the server will clear the alpha channel before
-sharing it.
+**Alpha Channel** - Determines if the alpha channel of the frames are to be
+shared. When set to off, the server clears the alpha channel before sharing.
 
-In most cases, an alpha channel of a rendered frame is filled with garbage and
-it causes problems when compositing the frames on Syphon client applications.
-Therefore it's recommended to be kept off unless a special setup is used.
+In most cases, the alpha channel of the rendered frames has no useful
+information, and it can cause glitches on the Syphon client side. Therefore,
+it's recommended to be kept off unless using a special setup.
 
-**Render Mode** - It determines how the frames are shared.
-- Send Only - It only sends the frames and doesn't keep them. In this mode,
-rendered frames are only available on Syphon clients and there is no way to
-reuse them in Unity. This mode is slightly faster than the others.
-- Render To Target - It sends the frames and keep them in a Render Texture.
-- Preview On GUI - It sends the frames and display them on the Game View
-using OnGUI function.
+**Render Mode** - Determines how the frames are shared.
+- Send Only - Sends the frames and doesn't keep them. In this mode,
+rendered frames are available only on the Syphon client side and are not
+available for using on the Unity side. This mode is slightly faster than the
+other modes.
+- Render To Target - Sends the frames and keeps them in a RenderTexture.
+- Preview On Game View - Sends the frames and display them on the Game View.
 
 License
 -------
 
-Copyright (C) 2014 Keijiro Takahashi
+Copyright (C) 2014, 2015 Keijiro Takahashi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
