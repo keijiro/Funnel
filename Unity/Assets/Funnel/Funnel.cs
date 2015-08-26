@@ -188,11 +188,6 @@ public class Funnel : MonoBehaviour
 
     #region MonoBehaviour Functions
 
-    void Awake()
-    {
-        SetUpResources();
-    }
-
     void Start()
     {
         SetUpResources();
