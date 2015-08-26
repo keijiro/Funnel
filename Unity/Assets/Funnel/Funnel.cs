@@ -65,7 +65,7 @@ public class Funnel : MonoBehaviour
         }
     }
 
-    public enum RenderMode { SendOnly, RenderToTarget, PreviewOnGUI }
+    public enum RenderMode { SendOnly, RenderToTarget, PreviewOnGameView }
     [SerializeField] RenderMode _renderMode = RenderMode.RenderToTarget;
 
     public RenderMode renderMode {
@@ -270,7 +270,7 @@ public class Funnel : MonoBehaviour
 
     void OnGUI()
     {
-        if (_renderMode == RenderMode.PreviewOnGUI &&
+        if (_renderMode == RenderMode.PreviewOnGameView &&
             Event.current.type.Equals(EventType.Repaint) &&
             _renderTexture && _gammaCorrectMaterial)
         {
