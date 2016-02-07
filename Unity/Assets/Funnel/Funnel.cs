@@ -114,6 +114,9 @@ public class Funnel : MonoBehaviour
         bool srgbColor, bool discardAlpha
     );
 
+    [DllImport("Funnel")]
+    static extern System.IntPtr GetRenderEventFunc();
+
     #endregion
 
     #region Private Properties and Functions
@@ -181,7 +184,7 @@ public class Funnel : MonoBehaviour
     void ResetServerState()
     {
         if (_slotIndex >= 0)
-            GL.IssuePluginEvent(ReleaseEventID + _slotIndex);
+            GL.IssuePluginEvent(GetRenderEventFunc(), ReleaseEventID + _slotIndex);
     }
 
     #endregion
@@ -202,7 +205,7 @@ public class Funnel : MonoBehaviour
     {
         // Release the slot.
         if (_slotIndex >= 0)
-            GL.IssuePluginEvent(ReleaseEventID + _slotIndex);
+            GL.IssuePluginEvent(GetRenderEventFunc(), ReleaseEventID + _slotIndex);
 
         // Release the camera.
         var camera = GetComponent<Camera>();
@@ -259,7 +262,7 @@ public class Funnel : MonoBehaviour
             }
 
             // Push a plugin event to publish the screen.
-            GL.IssuePluginEvent(PublishEventID + _slotIndex);
+            GL.IssuePluginEvent(GetRenderEventFunc(), PublishEventID + _slotIndex);
         }
         else
         {
