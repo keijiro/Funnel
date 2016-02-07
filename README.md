@@ -5,23 +5,27 @@ Funnel
 
 *Funnel* is a Syphon server plugin for [Unity][Unity]. It allows Unity to share
 rendered frames with other applications that supports the [Syphon][Syphon]
-protocol (e.g., [MadMapper][MadMapper], [VDMX][VDMX]) at almost zero
+protocol (e.g., [MadMapper][MadMapper], [VDMX][VDMX]) without introducing any
 performance loss.
 
 System Requirements
 -------------------
 
-- Mac OS X 10.6 (Snow Leopard) or later.
-- Unity 5.0 or later.
+- Mac OS X 10.6 (Snow Leopard) or later
+- Unity 5.2 or later
+
+This version uses the new low-level native plugin interface that is only
+supported on 5.2 and later versions. If it's required to support 5.1 and earlier
+versions, [the legacy version][Legacy] is available for use.
 
 Setting Up
 ----------
 
 - Download and import [the plugin package][Package].
-- Add the Funnel script to cameras that share rendered frames.
+- Add the Funnel script to a camera that's to be shared.
 
-Basically that's all! It automatically sets up a Syphon server and starts
-publishing rendered frames to Syphon client applications.
+That's all! It automatically sets up a Syphon server and starts publishing
+rendered frames towards Syphon client applications.
 
 The name of the Syphon server is set in the following manner:
 
@@ -34,27 +38,21 @@ Properties
 
 ![Inspector][Inspector]
 
-**Screen Width/Height, Anti Aliasing** - Screen resolution of the shared frames.
+**Screen Width/Height, Anti Aliasing** - Screen resolution of shared frames.
 
-**Alpha Channel** - Determines if the alpha channel of the frames are to be
-shared. When set to off, the server clears the alpha channel before sharing.
-
-In most cases, the alpha channel of the rendered frames has no useful
-information, and it can cause glitches on the Syphon client side. Therefore,
-it's recommended to be kept off unless using a special setup.
+**Alpha Channel** - Determines if alpha channel is to be shared. When set to
+off, the server clears the alpha channel before publishing.
 
 **Render Mode** - Determines how the frames are shared.
-- Send Only - Sends the frames and doesn't keep them. In this mode,
-rendered frames are available only on the Syphon client side and are not
-available for using on the Unity side. This mode is slightly faster than the
-other modes.
-- Render To Target - Sends the frames and keeps them in a RenderTexture.
-- Preview On Game View - Sends the frames and display them on the Game View.
+ - Send Only - Sends the frames and doesn't keep them. Rendered frames are only
+   available on the client side.
+ - Render To Target - Sends the frames and copies them to a render texture.
+ - Preview On Game View - Sends the frames and display them on the Game view.
 
 License
 -------
 
-Copyright (C) 2014, 2015 Keijiro Takahashi
+Copyright (C) 2014-2016 Keijiro Takahashi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -74,6 +72,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 [Screenshot]: http://keijiro.github.io/Funnel/screenshot.png
+[Legacy]:     https://github.com/keijiro/Funnel/tree/gllegacy
 [Inspector]:  http://keijiro.github.io/Funnel/inspector.png
 [Package]:    https://github.com/keijiro/Funnel/raw/master/Funnel.unitypackage
 [Unity]:      http://unity3d.com
