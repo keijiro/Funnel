@@ -9,6 +9,7 @@
 #import <Foundation/Foundation.h>
 #import <Syphon/Syphon.h>
 #import "FunnelServerHandler.h"
+#import "IUnityGraphics.h"
 
 // Event ID
 #define FUNNEL_EVENT_PUBLISH 0xfa9100
@@ -55,19 +56,19 @@ void FunnelSetFrameTexture(int slotIndex, const char* frameNameCString, int text
 #pragma mark
 #pragma mark Unity rendering callbacks
 
-// Callback function for graphics device initialization/shutdown.
-void UnitySetGraphicsDevice(void *device, int deviceType, int eventType)
+// Graphics device event handler
+void UNITY_INTERFACE_API OnGraphicsDeviceEvent(UnityGfxDeviceEventType eventType)
 {
     OSSpinLockLock(&localLock);
     
-    if (eventType == 0) // kGfxDeviceEventInitialize
+    if (eventType == kUnityGfxDeviceEventInitialize)
     {
         NSLog(@"Funnel: The graphics device was initialized.");
         if (servers) [servers release];
         servers = [[NSPointerArray strongObjectsPointerArray] retain];
         servers.count = 256;
     }
-    else if (eventType == 1) // kGfxDeviceEventShutdown
+    else if (eventType == kUnityGfxDeviceEventShutdown)
     {
         NSLog(@"Funnel: The graphics device was shut down.");
         [servers release];
@@ -77,8 +78,8 @@ void UnitySetGraphicsDevice(void *device, int deviceType, int eventType)
     OSSpinLockUnlock(&localLock);
 }
 
-// Callback function for rendering events.
-void UnityRenderEvent(int eventID)
+// Render event handler
+void UNITY_INTERFACE_API OnRenderEvent(int eventID)
 {
     if (!servers) return;
 
