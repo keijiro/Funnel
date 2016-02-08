@@ -7,7 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import <Syphon/Syphon.h>
+#import "Syphon/Syphon.h"
 #import "FunnelServerHandler.h"
 #import "IUnityGraphics.h"
 
