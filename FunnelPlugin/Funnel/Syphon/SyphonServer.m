@@ -27,76 +27,72 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #import "SyphonServer.h"
 #import "SyphonIOSurfaceImage.h"
 #import "SyphonPrivate.h"
 #import "SyphonOpenGLFunctions.h"
 #import "SyphonServerConnectionManager.h"
+#import "SyphonServerDrawingHelper.h"
+
+#define CGL_MACRO_CONTEXT _cgl_ctx
 
 #import <IOSurface/IOSurface.h>
 #import <OpenGL/CGLMacro.h>
-
 #import <libkern/OSAtomic.h>
-
-#import "SyphonServerDrawingHelper.h"
-
-
 
 @interface SyphonServer (Private)
 + (void)addServerToRetireList:(NSString *)serverUUID;
 + (void)removeServerFromRetireList:(NSString *)serverUUID;
 + (void)retireRemainingServers;
-// IOSurface and FBO
-#if !SYPHON_DEBUG_NO_DRAWING
-- (GLuint)newRenderbufferForSize:(NSSize)size internalFormat:(GLenum)format;
-#endif
-- (BOOL)capabilitiesDidChange;
-- (void) setupIOSurfaceForSize:(NSSize)size;
-- (void) destroyIOSurface;
-// Broadcast and Discovery
-- (void)startBroadcasts;
-- (void)stopBroadcasts;
-- (void)broadcastServerAnnounce;
-- (void)broadcastServerUpdate;
-
-
 @end
 
-__attribute__((destructor))
-static void finalizer()
+__attribute__((destructor)) static void finalizer()
 {
 	[SyphonServer retireRemainingServers];
 }
 
-@implementation SyphonServer{
-    SyphonServerDrawingHelper* _drawingHelper;
+@implementation SyphonServer
+{
+    NSString *_name;
+    NSString *_uuid;
+    
+    SyphonServerConnectionManager *_connectionManager;
+    
+    CGLContextObj _cgl_ctx;
+    SyphonServerDrawingHelper *_drawingHelper;
+    
+    void *_surfaceRef;
+    BOOL _pushPending;
+    SyphonImage *_surfaceTexture;
+    GLuint _surfaceFBO;
+    
+    GLint _virtualScreen;
+    BOOL _useSRGBBuffer;
+    BOOL _discardAlphaChannel;
+    
+    GLint _previousReadFBO;
+    GLint _previousDrawFBO;
+    GLint _previousFBO;
+    
+    int32_t _mdLock;
+    
+    id<NSObject> _activityToken;
 }
 
 + (BOOL)automaticallyNotifiesObserversForKey:(NSString *)theKey
 {
-	BOOL automatic;
     if ([theKey isEqualToString:@"hasClients"])
-	{
-		automatic=NO;
-    }
+        return NO;
 	else
-	{
-		automatic=[super automaticallyNotifiesObserversForKey:theKey];
-    }
-    return automatic;
+        return [super automaticallyNotifiesObserversForKey:theKey];
 }
 
 + (NSSet *)keyPathsForValuesAffectingValueForKey:(NSString *)key
 {
 	if ([key isEqualToString:@"serverDescription"])
-	{
 		return [NSSet setWithObject:@"name"];
-	}
 	else
-	{
 		return [super keyPathsForValuesAffectingValueForKey:key];
-	}
 }
 
 - (id)init
@@ -106,8 +102,7 @@ static void finalizer()
 
 - (id)initWithName:(NSString*)serverName context:(CGLContextObj)context options:(NSDictionary *)options
 {
-    self = [super init];
-	if(self)
+	if (self = [super init])
 	{
 		if (context == NULL)
 		{
@@ -117,80 +112,30 @@ static void finalizer()
 		
 		_mdLock = OS_SPINLOCK_INIT;
 		
-		cgl_ctx = CGLRetainContext(context);
+		_cgl_ctx = CGLRetainContext(context);
         _drawingHelper = [[SyphonServerDrawingHelper alloc] init];
         
-		if (serverName == nil)
-		{
-			serverName = @"";
-		}
+		if (serverName == nil) serverName = @"";
 		_name = [serverName copy];
 		_uuid = SyphonCreateUUIDString();
 		
 		_connectionManager = [[SyphonServerConnectionManager alloc] initWithUUID:_uuid options:options];
 		
-		[(SyphonServerConnectionManager *)_connectionManager addObserver:self forKeyPath:@"hasClients" options:NSKeyValueObservingOptionPrior context:nil];
+		[_connectionManager addObserver:self forKeyPath:@"hasClients" options:NSKeyValueObservingOptionPrior context:nil];
 		
-		if (![(SyphonServerConnectionManager *)_connectionManager start])
+		if (![_connectionManager start])
 		{
 			[self release];
 			return nil;
 		}
-				
-		NSNumber *isPrivate = [options objectForKey:SyphonServerOptionIsPrivate];
-		if ([isPrivate respondsToSelector:@selector(boolValue)]
-			&& [isPrivate boolValue] == YES)
-		{
-			_broadcasts = NO;
-		}
-		else
-		{
-			_broadcasts = YES;
-		}
-
-		if (_broadcasts)
-		{
-            [[self class] addServerToRetireList:_uuid];
-			[self startBroadcasts];
-		}
+        
+        [[self class] addServerToRetireList:_uuid];
+        [self startBroadcasts];
 		
         // We check for changes to the context's virtual screen, so set it to an invalid value
         // so our first binding counts as a change
         _virtualScreen = -1;
         
-		NSNumber *aaQuality = [options objectForKey:SyphonServerOptionAntialiasSampleCount];
-		if ([aaQuality respondsToSelector:@selector(unsignedIntegerValue)]
-			&& [aaQuality unsignedIntegerValue] > 0)
-		{
-            _wantedMSAASampleCount = [aaQuality unsignedIntValue];
-            _wantsContextChanges = YES;
-        }
-        
-        NSNumber *depthBufferResolution = [options objectForKey:SyphonServerOptionDepthBufferResolution];
-        if ([depthBufferResolution respondsToSelector:@selector(unsignedIntegerValue)]
-            && [depthBufferResolution unsignedIntegerValue] > 0)
-        {
-            _depthBufferResolution = [depthBufferResolution unsignedIntValue];
-            if (_depthBufferResolution < 20) _depthBufferResolution = GL_DEPTH_COMPONENT16;
-            else if (_depthBufferResolution < 28) _depthBufferResolution = GL_DEPTH_COMPONENT24;
-            else _depthBufferResolution = GL_DEPTH_COMPONENT32;
-        }
-        
-        NSNumber *stencilBufferResolution = [options objectForKey:SyphonServerOptionStencilBufferResolution];
-        if ([stencilBufferResolution respondsToSelector:@selector(unsignedIntegerValue)]
-            && [stencilBufferResolution unsignedIntegerValue] > 0)
-        {
-            // In fact this will almost always be ignored other than to check it is non-zero
-            _stencilBufferResolution = [stencilBufferResolution unsignedIntValue];
-            if (_stencilBufferResolution < 3) _stencilBufferResolution = GL_STENCIL_INDEX1;
-            else if (_stencilBufferResolution < 6) _stencilBufferResolution = GL_STENCIL_INDEX4;
-            else if (_stencilBufferResolution < 12) _stencilBufferResolution = GL_STENCIL_INDEX8;
-            else _stencilBufferResolution = GL_STENCIL_INDEX16;
-            // If we have a stencil buffer we will try to use the GL_EXT_packed_depth_stencil extension
-            // so we need to know about changes to the context's abilities
-            _wantsContextChanges = YES;
-        }
-
         NSNumber *enableSRGB = [options objectForKey:SyphonServerOptionUseSRGBBuffer];
         _useSRGBBuffer = ([enableSRGB respondsToSelector:@selector(boolValue)] && [enableSRGB boolValue] == YES);
 
@@ -208,28 +153,25 @@ static void finalizer()
 	return self;
 }
 
-- (void) shutDownServer
+- (void)shutDownServer
 {
 	if (_connectionManager)
 	{
-		[(SyphonServerConnectionManager *)_connectionManager removeObserver:self forKeyPath:@"hasClients"];
-		[(SyphonServerConnectionManager *)_connectionManager stop];
-		[(SyphonServerConnectionManager *)_connectionManager release];
+		[_connectionManager removeObserver:self forKeyPath:@"hasClients"];
+		[_connectionManager stop];
+		[_connectionManager release];
 		_connectionManager = nil;
 	}
 	
 	[self destroyIOSurface];
 	
-	if (_broadcasts)
-	{
-		[self stopBroadcasts];
-        [[self class] removeServerFromRetireList:_uuid];
-	}
+    [self stopBroadcasts];
+    [[self class] removeServerFromRetireList:_uuid];
 	
-	if (cgl_ctx)
+	if (_cgl_ctx)
 	{
-		CGLReleaseContext(cgl_ctx);
-		cgl_ctx = NULL;
+		CGLReleaseContext(_cgl_ctx);
+		_cgl_ctx = NULL;
 	}
 
     if (_activityToken)
@@ -246,7 +188,7 @@ static void finalizer()
 	[super finalize];
 }
 
-- (void) dealloc
+- (void)dealloc
 {
 	SYPHONLOG(@"Server deallocing, name: %@, UUID: %@", self.name, [self.serverDescription objectForKey:SyphonServerDescriptionUUIDKey]);
 	[self shutDownServer];
@@ -260,13 +202,9 @@ static void finalizer()
 	if ([keyPath isEqualToString:@"hasClients"])
 	{
 		if ([[change objectForKey:NSKeyValueChangeNotificationIsPriorKey] boolValue] == YES)
-		{
 			[self willChangeValueForKey:keyPath];
-		}
 		else
-		{
 			[self didChangeValueForKey:keyPath];
-		}
 	}
 	else
 	{
@@ -276,31 +214,26 @@ static void finalizer()
 
 - (CGLContextObj)context
 {
-	return cgl_ctx;
+	return _cgl_ctx;
 }
 
 - (NSDictionary *)serverDescription
 {
-	NSDictionary *surface = ((SyphonServerConnectionManager *)_connectionManager).surfaceDescription;
+	NSDictionary *surface = _connectionManager.surfaceDescription;
 	if (!surface) surface = [NSDictionary dictionary];
-    /*
-     Getting the app name: helper tasks, command-line tools, etc, don't have a NSRunningApplication instance,
-     so fall back to NSProcessInfo in those cases, then use an empty string as a last resort.
-     
-     http://developer.apple.com/library/mac/qa/qa1544/_index.html
+    NSArray *surfaceKey = [NSArray arrayWithObject:surface];
 
-     */
     NSString *appName = [[NSRunningApplication currentApplication] localizedName];
     if (!appName) appName = [[NSProcessInfo processInfo] processName];
     if (!appName) appName = [NSString string];
     
-	return [NSDictionary dictionaryWithObjectsAndKeys:
-			[NSNumber numberWithUnsignedInt:kSyphonDictionaryVersion], SyphonServerDescriptionDictionaryVersionKey,
-			self.name, SyphonServerDescriptionNameKey,
-			_uuid, SyphonServerDescriptionUUIDKey,
-			appName, SyphonServerDescriptionAppNameKey,
-			[NSArray arrayWithObject:surface], SyphonServerDescriptionSurfacesKey,
-			nil];
+    NSNumber *version = [NSNumber numberWithUnsignedInt:kSyphonDictionaryVersion];
+    
+    return @{SyphonServerDescriptionDictionaryVersionKey: version,
+             SyphonServerDescriptionNameKey: self.name,
+             SyphonServerDescriptionUUIDKey: _uuid,
+             SyphonServerDescriptionAppNameKey: appName,
+             SyphonServerDescriptionSurfacesKey: surfaceKey};
 }
 
 - (NSString*)name
@@ -318,11 +251,8 @@ static void finalizer()
 	[_name release];
 	_name = newName;
 	OSSpinLockUnlock(&_mdLock);
-	[(SyphonServerConnectionManager *)_connectionManager setName:newName];
-	if (_broadcasts)
-	{
-		[self broadcastServerUpdate];
-	}
+	[_connectionManager setName:newName];
+    [self broadcastServerUpdate];
 }
 
 - (void)stop
@@ -332,350 +262,118 @@ static void finalizer()
 
 - (BOOL)hasClients
 {
-	return ((SyphonServerConnectionManager *)_connectionManager).hasClients;
+	return _connectionManager.hasClients;
 }
 
 - (BOOL)bindToDrawFrameOfSize:(NSSize)size
 {
-	// TODO: we should probably check we're not already bound and raise an exception here
-	// to enforce proper use
-#if !SYPHON_DEBUG_NO_DRAWING
-    // If we have changed screens, we need to check we can still use any extensions we rely on
-	// If the dimensions of the image have changed, rebuild the IOSurface/FBO/Texture combo.
-	if((_wantsContextChanges && [self capabilitiesDidChange]) || ! NSEqualSizes(_surfaceTexture.textureSize, size))
-	{
-		[self destroyIOSurface];
-		[self setupIOSurfaceForSize:size];
+    // If the dimensions of the image have changed, rebuild the IOSurface/FBO/Texture combo.
+    if (!NSEqualSizes(_surfaceTexture.textureSize, size))
+    {
+        [self destroyIOSurface];
+        [self setupIOSurfaceForSize:size];
         _pushPending = YES;
     }
-    if (_surfaceTexture == nil)
-    {
-        return NO;
-    }
+    
+    if (_surfaceTexture == nil) return NO;
+    
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &_previousFBO);
 	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING_EXT, &_previousReadFBO);
 	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING_EXT, &_previousDrawFBO);
-	
-	if(_msaaSampleCount)
-	{
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, _msaaFBO);
-	}
-	else
-	{		
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, _surfaceFBO);
-	}
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, _surfaceFBO);
 
-	if(_useSRGBBuffer)
-	{
-		// Enable linear to sRGB correction.
-		glEnable(GL_FRAMEBUFFER_SRGB);
-	}
-#endif // SYPHON_DEBUG_NO_DRAWING
-	return YES;
+	if (_useSRGBBuffer) glEnable(GL_FRAMEBUFFER_SRGB);
+
+    return YES;
 }
 
 - (void)unbindAndPublish
 {
-#if !SYPHON_DEBUG_NO_DRAWING
-	
-	// we now have to blit from our MSAA to our IOSurface normal texture 
-	if(_msaaSampleCount)
-	{
-		glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, _msaaFBO);
-		glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, _surfaceFBO);
-		
-		// blit the whole extent from read to draw 
-		NSSize size = _surfaceTexture.textureSize;
-		glBlitFramebufferEXT(0, 0, (GLsizei)size.width, (GLsizei)size.height, 0, 0, (GLsizei)size.width, (GLsizei)size.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-	}
-	
-	
 	// flush to make sure IOSurface updates are seen globally.
 	glFlushRenderAPPLE();
 		
-	if(_useSRGBBuffer)
-	{
-		// Disable linear to sRGB correction.
-		glDisable(GL_FRAMEBUFFER_SRGB);
-	}
+	if(_useSRGBBuffer) glDisable(GL_FRAMEBUFFER_SRGB);
 
 	// restore state
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, _previousFBO);	
 	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, _previousReadFBO);
 	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, _previousDrawFBO);
-#endif // SYPHON_DEBUG_NO_DRAWING
-	if (_pushPending)
-	{
-#if !SYPHON_DEBUG_NO_DRAWING
+
+    if (_pushPending)
+    {
         // Our IOSurface won't update until the next glFlush(). Usually we rely on our host doing this, but
-		// we must do it for the first frame on a new surface to avoid sending surface details for a surface
-		// which has no clean image.
-		glFlush();
-#endif // SYPHON_DEBUG_NO_DRAWING
-		// Push the new surface ID to clients
-		[(SyphonServerConnectionManager *)_connectionManager setSurfaceID:IOSurfaceGetID(_surfaceRef)];
-		_pushPending = NO;
-	}
-	[(SyphonServerConnectionManager *)_connectionManager publishNewFrame];
+        // we must do it for the first frame on a new surface to avoid sending surface details for a surface
+        // which has no clean image.
+        glFlush();
+        // Push the new surface ID to clients
+        [_connectionManager setSurfaceID:IOSurfaceGetID(_surfaceRef)];
+        _pushPending = NO;
+    }
+    
+	[_connectionManager publishNewFrame];
 }
 
-- (void)publishFrameTexture:(GLuint)texID textureTarget:(GLenum)target imageRegion:(NSRect)region textureDimensions:(NSSize)size flipped:(BOOL)isFlipped
+- (void)publishFrameTexture:(GLuint)texID textureDimensions:(NSSize)size
 {
-	if(texID != 0 && ((target == GL_TEXTURE_2D) || (target == GL_TEXTURE_RECTANGLE_EXT)) && [self bindToDrawFrameOfSize:region.size])
+	if (texID != 0 && [self bindToDrawFrameOfSize:size])
 	{
-#if !SYPHON_DEBUG_NO_DRAWING
-		// render to our FBO with an IOSurface backed texture attachment (whew!)
-        NSSize surfaceSize = _surfaceTexture.textureSize;
-        [_drawingHelper drawFrameTexture:texID surfaceSize:surfaceSize inContex:cgl_ctx discardAlpha:_discardAlphaChannel];
-#endif // SYPHON_DEBUG_NO_DRAWING
+        [_drawingHelper drawFrameTexture:texID surfaceSize:_surfaceTexture.textureSize inContex:_cgl_ctx discardAlpha:_discardAlphaChannel];
 		[self unbindAndPublish];
 	}
-}
-
-- (SYPHON_IMAGE_UNIQUE_CLASS_NAME *)newFrameImage
-{
-	return [_surfaceTexture retain];
 }
 
 #pragma mark -
 #pragma mark Private methods
 
 #pragma mark FBO & IOSurface handling
-- (BOOL)capabilitiesDidChange
-{
-    BOOL didChange = NO;
-#if !SYPHON_DEBUG_NO_DRAWING
-    GLint screen;
-    CGLGetVirtualScreen(cgl_ctx, &screen);
-    if (screen != _virtualScreen)
-    {
-        GLuint newMSAASampleCount = 0;
-        BOOL newCombinedDepthStencil = NO;
-        
-        if (_wantedMSAASampleCount != 0)
-        {
-            if (SyphonOpenGLContextSupportsExtension(cgl_ctx, "GL_EXT_framebuffer_multisample"))
-            {
-                newMSAASampleCount = _wantedMSAASampleCount;
-                
-                GLint maxSamples;
-                glGetIntegerv(GL_MAX_SAMPLES_EXT, &maxSamples);
-                
-                if (newMSAASampleCount > (GLuint)maxSamples) newMSAASampleCount = maxSamples;
-            }
-        }
-        if (newMSAASampleCount != _msaaSampleCount)
-        {
-            didChange = YES;
-            _msaaSampleCount = newMSAASampleCount;
-        }
-        
-        /*
-         No current cards support FBOs with seperate depth and stencil buffers, so if both are
-         requested, we have to use GL_DEPTH24_STENCIL8.
-         If any stencil buffer is requested at all, we also have to use a combi buffer.
-         The exception is the software renderer under 10.6, which only works with distinct
-         depth and stencil buffers and does not support GL_EXT_packed_depth_stencil.
-         */
-        if (_stencilBufferResolution != 0
-            && SyphonOpenGLContextSupportsExtension(cgl_ctx, "GL_EXT_packed_depth_stencil"))
-        {
-            newCombinedDepthStencil = YES;
-        }
-        if (newCombinedDepthStencil != _combinedDepthStencil)
-        {
-            didChange = YES;
-            _combinedDepthStencil = newCombinedDepthStencil;
-        }
-        _virtualScreen = screen;
-        SYPHONLOG(@"SyphonServer: renderer change, required capabilities %@", didChange ? @"changed" : @"did not change");
-    }
-#endif // SYPHON_DEBUG_NO_DRAWING
-    return didChange;
-}
 
-#if !SYPHON_DEBUG_NO_DRAWING
-- (GLuint)newRenderbufferForSize:(NSSize)size internalFormat:(GLenum)format
+- (void)setupIOSurfaceForSize:(NSSize)size
 {
-    GLuint buffer;
-    glGenRenderbuffersEXT(1, &buffer);
-    glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, buffer);
-    GLenum error = GL_NO_ERROR;
-    do {
-        // Most cards won't complain as long as the sample count is not more than the maximum they support, but the spec allows 
-        // them to emit a GL_OUT_OF_MEMORY error if they don't support a particular sample count, so we check for that and attempt
-        // to recover by trying a smaller count
-        if (error == GL_OUT_OF_MEMORY)
-        {
-            _msaaSampleCount--;
-            SYPHONLOG(@"SyphonServer: reducing MSAA sample count due to GL_OUT_OF_MEMORY (now %u)", _msaaSampleCount);
-        }
-        glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT,
-                                            _msaaSampleCount,
-                                            format,
-                                            (GLsizei)size.width,
-                                            (GLsizei)size.height);
-        error = glGetError();
-    } while (error == GL_OUT_OF_MEMORY && _msaaSampleCount > 0);
-    return buffer;
-}
-#endif // SYPHON_DEBUG_NO_DRAWING
-
-- (void) setupIOSurfaceForSize:(NSSize)size
-{
-#if !SYPHON_DEBUG_NO_DRAWING
-	// init our texture and IOSurface
-	NSDictionary* surfaceAttributes = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithBool:YES], (NSString*)kIOSurfaceIsGlobal,
-									   [NSNumber numberWithUnsignedInteger:(NSUInteger)size.width], (NSString*)kIOSurfaceWidth,
-									   [NSNumber numberWithUnsignedInteger:(NSUInteger)size.height], (NSString*)kIOSurfaceHeight,
-									   [NSNumber numberWithUnsignedInteger:4U], (NSString*)kIOSurfaceBytesPerElement, nil];
-
-	_surfaceRef =  IOSurfaceCreate((CFDictionaryRef) surfaceAttributes);
-	[surfaceAttributes release];
-	// save state
-    GLint previousRBO;
-	//glPushAttrib(GL_ALL_ATTRIB_BITS);
-	glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &_previousFBO);
-	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING_EXT, &_previousReadFBO);
-	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING_EXT, &_previousDrawFBO);
-	glGetIntegerv(GL_RENDERBUFFER_BINDING_EXT, &previousRBO);
-    // make a new texture.
+    // init our texture and IOSurface
+    NSDictionary* surfaceAttributes = @{(NSString*)kIOSurfaceIsGlobal: [NSNumber numberWithBool:YES],
+                                        (NSString*)kIOSurfaceWidth: [NSNumber numberWithUnsignedInteger:(NSUInteger)size.width],
+                                        (NSString*)kIOSurfaceHeight: [NSNumber numberWithUnsignedInteger:(NSUInteger)size.height],
+                                        (NSString*)kIOSurfaceBytesPerElement: [NSNumber numberWithUnsignedInteger:4U]};
+    _surfaceRef =  IOSurfaceCreate((CFDictionaryRef)surfaceAttributes);
     
-	GLenum internalFormat = _useSRGBBuffer ? GL_SRGB8_ALPHA8_EXT : GL_RGBA8;
-	_surfaceTexture = [[SyphonIOSurfaceImage alloc] initWithSurface:_surfaceRef forContext:cgl_ctx internalFormat:internalFormat];
-	if(_surfaceTexture == nil)
-	{
-		[self destroyIOSurface];
-	}
-	else
-	{
-        // no error
-        GLenum status;
-        
-        if (_combinedDepthStencil == YES)
-        {
-            _depthBuffer = [self newRenderbufferForSize:size internalFormat:GL_DEPTH24_STENCIL8_EXT];
-        }
-        else
-        {
-            if (_depthBufferResolution != 0)
-            {
-                _depthBuffer = [self newRenderbufferForSize:size internalFormat:_depthBufferResolution];
-            }
-            if (_stencilBufferResolution != 0)
-            {
-                _stencilBuffer = [self newRenderbufferForSize:size internalFormat:_stencilBufferResolution];
-            }
-        }
-        
-		if(_msaaSampleCount > 0)
-		{
-			// Color MSAA Attachment
-            _msaaColorBuffer = [self newRenderbufferForSize:size internalFormat:GL_RGBA];
-            
-			// attach color, depth and stencil to our MSAA FBO
-			glGenFramebuffersEXT(1, &_msaaFBO);
-			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, _msaaFBO);
-			glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_RENDERBUFFER_EXT, _msaaColorBuffer);
-            if (_combinedDepthStencil)
-            {
-                glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER_EXT, _depthBuffer);
-            }
-            else
-            {
-                if (_depthBuffer != 0)
-                {
-                    glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, _depthBuffer);
-                }
-                if (_stencilBuffer != 0)
-                {
-                    glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, _stencilBuffer);
-                }
-            }
-			
-			status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-			if(status != GL_FRAMEBUFFER_COMPLETE_EXT)
-			{
-				SYPHONLOG(@"SyphonServer: Cannot create MSAA FBO (OpenGL Error %04X), falling back to non-antialiased FBO", status);
-                glDeleteFramebuffersEXT(1, &_msaaFBO);
-                _msaaFBO = 0;
-                
-                glDeleteRenderbuffersEXT(1, &_msaaColorBuffer);
-                _msaaColorBuffer = 0;
-				_msaaSampleCount = 0;
-			}			
-		}
-        
+    // save state
+    GLint previousRBO;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &_previousFBO);
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING_EXT, &_previousReadFBO);
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING_EXT, &_previousDrawFBO);
+    glGetIntegerv(GL_RENDERBUFFER_BINDING_EXT, &previousRBO);
+    
+    // make a new texture.
+    GLenum internalFormat = _useSRGBBuffer ? GL_SRGB8_ALPHA8_EXT : GL_RGBA8;
+    _surfaceTexture = [[SyphonIOSurfaceImage alloc] initWithSurface:_surfaceRef forContext:_cgl_ctx internalFormat:internalFormat];
+    
+    if(_surfaceTexture == nil)
+    {
+        [self destroyIOSurface];
+    }
+    else
+    {
         glGenFramebuffersEXT(1, &_surfaceFBO);
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, _surfaceFBO);
         glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_EXT, _surfaceTexture.textureName, 0);
-        if (_msaaSampleCount == 0)
-        {
-            // If we're not doing MSAA, attach depth and stencil buffers to our FBO
-            if (_combinedDepthStencil)
-            {
-                glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER_EXT, _depthBuffer);
-            }
-            else
-            {
-                if (_depthBuffer != 0)
-                {
-                    glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, _depthBuffer);
-                }
-                if (_stencilBuffer != 0)
-                {
-                    glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, _stencilBuffer);
-                }
-            }
-        }
-
-        status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
         
-		if(status != GL_FRAMEBUFFER_COMPLETE_EXT)
-		{
-			SYPHONLOG(@"SyphonServer: Cannot create FBO (OpenGL Error %04X)", status);
-			[self destroyIOSurface];
-		}
-	}
-
-	// restore state
+        GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+        if (status != GL_FRAMEBUFFER_COMPLETE_EXT)
+        {
+            SYPHONLOG(@"SyphonServer: Cannot create FBO (OpenGL Error %04X)", status);
+            [self destroyIOSurface];
+        }
+    }
+    
+    // restore state
     glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, previousRBO);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, _previousFBO);	
-	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, _previousReadFBO);
-	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, _previousDrawFBO);
-	//glPopAttrib();
-	
-#endif // SYPHON_DEBUG_NO_DRAWING
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, _previousFBO);	
+    glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, _previousReadFBO);
+    glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, _previousDrawFBO);
 }
 
 - (void) destroyIOSurface
 {
-#if !SYPHON_DEBUG_NO_DRAWING
-	
-	if(_msaaFBO != 0)
-	{
-		glDeleteFramebuffersEXT(1, &_msaaFBO);
-        _msaaFBO = 0;
-	}
-	
-	if(_msaaColorBuffer != 0)
-	{
-		glDeleteRenderbuffersEXT(1, &_msaaColorBuffer);
-        _msaaColorBuffer = 0;
-	}
-
-	if(_depthBuffer != 0)
-	{
-		glDeleteRenderbuffersEXT(1, &_depthBuffer);
-        _depthBuffer = 0;
-	}
-	
-    if (_stencilBuffer != 0)
-    {
-        glDeleteRenderbuffersEXT(1, &_stencilBuffer);
-        _stencilBuffer = 0;
-    }
-    
 	if (_surfaceFBO != 0)
 	{
 		glDeleteFramebuffersEXT(1, &_surfaceFBO);
@@ -690,16 +388,15 @@ static void finalizer()
 	
 	[_surfaceTexture release];
 	_surfaceTexture = nil;
-#endif // SYPHON_DEBUG_NO_DRAWING
 }
 
 #pragma mark Notification Handling for Server Presence
+
 /*
  Broadcast and discovery is done via NSDistributedNotificationCenter. Servers notify announce, change (currently only affects name) and retirement.
  Discovery is done by a discovery-request notification, to which servers respond with an announce.
  
  If this gets unweildy we could move it into a SyphonBroadcaster class
- 
  */
 
 /*
@@ -770,14 +467,11 @@ static NSMutableSet *mRetireList = nil;
 
 - (void)broadcastServerAnnounce
 {
-	if (_broadcasts)
-	{
-		NSDictionary *description = self.serverDescription;
-		[[NSDistributedNotificationCenter defaultCenter] postNotificationName:SyphonServerAnnounce 
-																	   object:[description objectForKey:SyphonServerDescriptionUUIDKey]
-																	 userInfo:description
-                                                           deliverImmediately:YES];
-	}
+    NSDictionary *description = self.serverDescription;
+    [[NSDistributedNotificationCenter defaultCenter] postNotificationName:SyphonServerAnnounce 
+                                                                   object:[description objectForKey:SyphonServerDescriptionUUIDKey]
+                                                                 userInfo:description
+                                                       deliverImmediately:YES];
 }
 
 - (void)broadcastServerUpdate
@@ -800,5 +494,3 @@ static NSMutableSet *mRetireList = nil;
 }
 
 @end
-
-

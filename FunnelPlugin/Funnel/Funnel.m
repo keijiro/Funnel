@@ -110,10 +110,7 @@ void UNITY_INTERFACE_API OnRenderEvent(int eventID)
             if (handler.syphonServer.hasClients)
             {
                 [handler.syphonServer publishFrameTexture:handler.frameTextureName
-                                            textureTarget:GL_TEXTURE_2D
-                                              imageRegion:handler.frameTextureRect
-                                        textureDimensions:handler.frameTextureRect.size
-                                                  flipped:NO];
+                                        textureDimensions:handler.frameTextureRect.size];
             }
         }
     }
