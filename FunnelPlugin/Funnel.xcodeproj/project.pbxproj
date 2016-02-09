@@ -279,6 +279,7 @@
 				0FE12D39186C1E2000E9FD74 /* Frameworks */,
 				0FE12D3A186C1E2000E9FD74 /* Resources */,
 				0FE12D4F186C1E7600E9FD74 /* CopyFiles */,
+				0F88237E1C6A1EC0003084BF /* Copy Executable File */,
 			);
 			buildRules = (
 			);
@@ -325,6 +326,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		0F88237E1C6A1EC0003084BF /* Copy Executable File */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/$(EXECUTABLE_PATH)",
+			);
+			name = "Copy Executable File";
+			outputPaths = (
+				"../Unity/Assets/Funnel/Plugins/$(EXECUTABLE_PATH)",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp ${SCRIPT_INPUT_FILE_0} ${SCRIPT_OUTPUT_FILE_0}";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		0FE12D38186C1E2000E9FD74 /* Sources */ = {
