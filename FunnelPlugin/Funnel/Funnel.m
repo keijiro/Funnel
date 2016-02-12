@@ -1,128 +1,138 @@
 //
-// Funnel: Minimal Syphon Server Plugin for Unity
-// By Keijiro Takahashi, 2013, 2014
+// Funnel - Syphon server plugin for Unity
 //
-// - There are 256 slots for servers.
-// - This plugin uses render event IDs from 0xf9100 to 0xf92ff.
+// Copyright (C) 2013-2016 Keijiro Takahashi
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
 //
 
 #import <Foundation/Foundation.h>
-#import <Syphon/Syphon.h>
+#import "Syphon/Syphon.h"
 #import "FunnelServerHandler.h"
 #import "IUnityGraphics.h"
 
-// Event ID
-#define FUNNEL_EVENT_PUBLISH 0xfa9100
-#define FUNNEL_EVENT_RELEASE 0xfa9200
+// Event IDs
+#define FUNNEL_EVENT_PUBLISH 0x10000
+#define FUNNEL_EVENT_RELEASE 0x20000
 
-// Server slots.
-static NSPointerArray *servers;
+// Server slot table
+static NSPointerArray *s_servers;
+OSSpinLock s_lock = OS_SPINLOCK_INIT;
 
-// Mutex object.
-OSSpinLock localLock = OS_SPINLOCK_INIT;
+#pragma mark Native plugin functions
 
-#pragma mark
-#pragma mark Expoerted functions
-
-// Set a frame texture.
-void FunnelSetFrameTexture(int slotIndex, const char* frameNameCString, int textureName, int width, int height, bool srgb, bool discardAlpha)
+// Set a frame texture to a given slot
+void UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API FunnelSetFrame(
+    int slotIndex, const char* frameNameCString,
+    int textureName, int width, int height,
+    bool linearToSRGB, bool discardAlpha)
 {
-    if (!servers) return;
+    if (!s_servers) return;
     
-    OSSpinLockLock(&localLock);
+    OSSpinLockLock(&s_lock);
     
-    // Retrieve the handler from the server slot.
-    FunnelServerHandler *handler = [servers pointerAtIndex:slotIndex];
+    FunnelServerHandler *handler = [s_servers pointerAtIndex:slotIndex];
     
-    // Allocate a new handler if it's an unknown slot.
+    // Allocate a new handler if it's an unused slot.
     if (!handler)
     {
         handler = [[FunnelServerHandler alloc] init];
-        [servers replacePointerAtIndex:slotIndex withPointer:handler];
+        [s_servers replacePointerAtIndex:slotIndex withPointer:handler];
         [handler release];
-        NSLog(@"Funnel: A new handler was created on slot %d.", slotIndex);
+        NSLog(@"Funnel: slot %d created", slotIndex);
     }
-
-    // Update the status.
+    
+    // Status update
     handler.serverName = [NSString stringWithUTF8String:frameNameCString];
     handler.frameTextureName = textureName;
     handler.frameTextureRect = NSMakeRect(0, 0, width, height);
-    handler.useSRGBBuffer = srgb;
-    handler.discardAlphaChannel = discardAlpha;
+    handler.linearToSRGB = linearToSRGB;
+    handler.discardAlpha = discardAlpha;
     
-    OSSpinLockUnlock(&localLock);
+    OSSpinLockUnlock(&s_lock);
 }
 
-#pragma mark
-#pragma mark Unity rendering callbacks
+#pragma mark Rendering callbacks
 
 // Graphics device event handler
 void UNITY_INTERFACE_API OnGraphicsDeviceEvent(UnityGfxDeviceEventType eventType)
 {
-    OSSpinLockLock(&localLock);
+    OSSpinLockLock(&s_lock);
     
     if (eventType == kUnityGfxDeviceEventInitialize)
     {
-        NSLog(@"Funnel: The graphics device was initialized.");
-        if (servers) [servers release];
-        servers = [[NSPointerArray strongObjectsPointerArray] retain];
-        servers.count = 256;
+        NSLog(@"Funnel: initialized");
+        if (s_servers) [s_servers release];
+        s_servers = [[NSPointerArray strongObjectsPointerArray] retain];
+        s_servers.count = 256;
     }
     else if (eventType == kUnityGfxDeviceEventShutdown)
     {
-        NSLog(@"Funnel: The graphics device was shut down.");
-        [servers release];
-        servers = nil;
+        NSLog(@"Funnel: shut down");
+        [s_servers release];
+        s_servers = nil;
     }
 
-    OSSpinLockUnlock(&localLock);
+    OSSpinLockUnlock(&s_lock);
 }
 
 // Render event handler
 void UNITY_INTERFACE_API OnRenderEvent(int eventID)
 {
-    if (!servers) return;
+    if (!s_servers) return;
 
-    OSSpinLockLock(&localLock);
-    
-    // Retrieve the arguments.
-    int slotIndex = eventID & 0xff;
+    int slotIndex = eventID & 0xffff;
     eventID -= slotIndex;
+    
+    OSSpinLockLock(&s_lock);
     
     if (eventID == FUNNEL_EVENT_PUBLISH)
     {
-        // Retrieve the server handler from the server slot.
-        FunnelServerHandler *handler = [servers pointerAtIndex:slotIndex];
+        FunnelServerHandler *handler = [s_servers pointerAtIndex:slotIndex];
         if (handler)
         {
-            // Create a Syphon server if not yet.
-            if (!handler.syphonServer)
+            SyphonServer *server = handler.syphonServer;
+            
+            // Create a new server if not yet.
+            if (!server)
             {
-                SyphonServer *server = [[SyphonServer alloc] initWithName:handler.serverName
-                                                                  context:CGLGetCurrentContext()
-                                                                  options:handler.serverOptions];
+                server = [[SyphonServer alloc] initWithName:handler.serverName];
                 handler.syphonServer = server;
                 [server release];
-                NSLog(@"Funnel: A Syphon server was created on slot %d.", slotIndex);
+                NSLog(@"Funnel: created a new server with slot %d", slotIndex);
             }
             
             // Publish the frame if it has clients.
-            if (handler.syphonServer.hasClients)
+            if (server.hasClients)
             {
-                [handler.syphonServer publishFrameTexture:handler.frameTextureName
-                                            textureTarget:GL_TEXTURE_2D
-                                              imageRegion:handler.frameTextureRect
-                                        textureDimensions:handler.frameTextureRect.size
-                                                  flipped:NO];
+                server.linearToSRGB = handler.linearToSRGB;
+                server.discardsAlpha = handler.discardAlpha;
+                [server publishFrameTexture:handler.frameTextureName size:handler.frameTextureRect.size];
             }
         }
     }
     else if (eventID == FUNNEL_EVENT_RELEASE)
     {
-        // Release the resources on the slot.
-        [servers replacePointerAtIndex:slotIndex withPointer:nil];
-        NSLog(@"Funnel: slot %d was released.", slotIndex);
+        // Release the resources in the slot.
+        [s_servers replacePointerAtIndex:slotIndex withPointer:nil];
+        NSLog(@"Funnel: slot %d released", slotIndex);
     }
     
-    OSSpinLockUnlock(&localLock);
+    OSSpinLockUnlock(&s_lock);
 }
