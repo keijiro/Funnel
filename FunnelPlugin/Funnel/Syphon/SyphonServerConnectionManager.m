@@ -68,13 +68,11 @@
 
 - (id)init
 {
-	return [self initWithUUID:nil options:nil];
+	return [self initWithUUID:nil];
 }
 
-- (id)initWithUUID:(NSString *)uuid options:(NSDictionary *)options
+- (id)initWithUUID:(NSString *)uuid
 {
-	SYPHON_UNUSED(options);
-
     self = [super init];
     if (self)
 	{

@@ -27,23 +27,11 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#import <Cocoa/Cocoa.h>
 #import "SyphonImage.h"
 #import <IOSurface/IOSurface.h>
 
-#define SYPHON_IOSURFACE_IMAGE_UNIQUE_CLASS_NAME SYPHON_UNIQUE_CLASS_NAME(SyphonIOSurfaceImage)
+@interface SyphonIOSurfaceImage : SyphonImage
 
-@interface SYPHON_IOSURFACE_IMAGE_UNIQUE_CLASS_NAME : SyphonImage {
-@private
-	CGLContextObj cgl_ctx;
-	IOSurfaceRef _surface;
-	GLuint _texture;
-	NSSize _size;
-}
-- (id)initWithSurface:(IOSurfaceRef)surfaceRef forContext:(CGLContextObj)context;
-- (id)initWithSurface:(IOSurfaceRef)surfaceRef forContext:(CGLContextObj)context internalFormat:(GLenum)internalFormat;
+- (id)initWithSurface:(IOSurfaceRef)surfaceRef;
+
 @end
-
-#if defined(SYPHON_USE_CLASS_ALIAS)
-@compatibility_alias SyphonIOSurfaceImage SYPHON_IOSURFACE_IMAGE_UNIQUE_CLASS_NAME;
-#endif

@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <OpenGL/gltypes.h>
 
 @interface SyphonProgram : NSObject
 

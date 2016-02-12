@@ -1,4 +1,4 @@
-//
+﻿//
 // Funnel - Syphon server plugin for Unity
 //
 // Copyright (C) 2013-2016 Keijiro Takahashi
@@ -22,17 +22,38 @@
 // THE SOFTWARE.
 //
 
-#import <Foundation/Foundation.h>
+Shader "Hidden/Funnel/Gamma"
+{
+    Properties
+    {
+        _MainTex("", 2D) = ""{}
+    }
 
-@class SyphonServer;
+    CGINCLUDE
 
-@interface FunnelServerHandler : NSObject
+    #include "UnityCG.cginc"
 
-@property (retain, nonatomic) SyphonServer *syphonServer;
-@property (copy, nonatomic) NSString *serverName;
-@property (assign) NSRect frameTextureRect;
-@property (assign) int frameTextureName;
-@property (assign) BOOL linearToSRGB;
-@property (assign) BOOL discardAlpha;
+    sampler2D _MainTex;
 
-@end
+    half4 frag_encode(v2f_img i) : SV_Target
+    {
+        half4 c = tex2D(_MainTex, i.uv);
+        c.rgb = LinearToGammaSpace(c.rgb);
+        return c;
+    }
+
+    ENDCG
+
+    SubShader
+    {
+        Pass
+        {
+            ZTest Always Cull Off ZWrite Off
+            Fog { Mode off }
+            CGPROGRAM
+            #pragma vertex vert_img
+            #pragma fragment frag_encode
+            ENDCG
+        }
+    }
+}

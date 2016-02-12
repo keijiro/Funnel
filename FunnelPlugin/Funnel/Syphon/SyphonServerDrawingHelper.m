@@ -7,7 +7,6 @@
 //
 
 #import "SyphonServerDrawingHelper.h"
-#import "SyphonOpenGLFunctions.h"
 #import "SyphonProgram.h"
 #import <OpenGL/gl3.h>
 
@@ -29,17 +28,11 @@
     return self;
 }
 
-- (void)setupWithContext:(CGLContextObj)context
+- (void)setup
 {
-    // Is the context with core profile?
-    BOOL isCore = SyphonOpenGLContextIsCoreProfile(context);
-    
-    // Create a VAO when under core profile.
-    if (isCore)
-    {
-        glGenVertexArrays(1, &_vao);
-        glBindVertexArray(_vao);
-    }
+    // Create a VAO.
+    glGenVertexArrays(1, &_vao);
+    glBindVertexArray(_vao);
     
     // Create a VBO with a quad.
     glGenBuffers(1, &_vbo);
@@ -54,30 +47,14 @@
     _initialized = YES;
 }
 
-- (void)drawFrameTexture:(GLuint)texID surfaceSize:(NSSize)surfaceSize inContex:(CGLContextObj)context discardAlpha:(BOOL)discardAlpha
+- (void)drawFrameTexture:(GLuint)texID surfaceSize:(NSSize)surfaceSize discardAlpha:(BOOL)discardAlpha
 {
     // Initialize with the GL context if not yet.
-    if (!_initialized) [self setupWithContext:context];
-    
-    // Swap the GL context.
-    CGLContextObj prev_context = CGLGetCurrentContext();
-    CGLSetCurrentContext(context);
+    if (!_initialized) [self setup];
     
     // Set up the program.
     _syphonProgram.discardAlpha = discardAlpha;
     [_syphonProgram use];
-    
-    // Use the VAO or rebind the VBO.
-    if (_vao)
-    {
-        glBindVertexArray(_vao);
-    }
-    else
-    {
-        glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(0);
-    }
     
     // Set up the other states.
     glViewport(0, 0, surfaceSize.width, surfaceSize.height);
@@ -85,12 +62,10 @@
     glDisable(GL_CULL_FACE);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texID);
+    glBindVertexArray(_vao);
     
-    // Draw the quad.
+    // Draw the screen quad.
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    
-    // Return to the previous context.
-    CGLSetCurrentContext(prev_context);
 }
 
 @end

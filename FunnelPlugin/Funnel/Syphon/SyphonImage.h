@@ -27,18 +27,12 @@
      SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import <Cocoa/Cocoa.h>
-#import <OpenGL/OpenGL.h>
+#import <Foundation/Foundation.h>
+#import <OpenGL/gltypes.h>
 
-#define SYPHON_IMAGE_UNIQUE_CLASS_NAME SYPHON_UNIQUE_CLASS_NAME(SyphonImage)
-
-@interface SYPHON_IMAGE_UNIQUE_CLASS_NAME : NSObject
+@interface SyphonImage : NSObject
 
 @property (readonly) GLuint textureName;
 @property (readonly) NSSize textureSize;
 
 @end
-
-#if defined(SYPHON_USE_CLASS_ALIAS)
-@compatibility_alias SyphonImage SYPHON_IMAGE_UNIQUE_CLASS_NAME;
-#endif

@@ -7,29 +7,16 @@
 //
 
 #import "SyphonProgram.h"
-#import "SyphonOpenGLFunctions.h"
 #import <OpenGL/gl3.h>
 
 #pragma mark Utility macros
 
-#define SHADER_STRING(ver, text) @"#version "#ver"\n"#text
+#define SHADER_STRING(text) @"#version 150\n"#text
 
 #pragma mark
 #pragma mark Shader code
 
-// Vertex shader code
-NSString *const vertexShaderString120 = SHADER_STRING(120,
-    attribute vec2 position;
-    varying vec2 texcoord;
-
-    void main(void)
-    {
-        texcoord = position;
-        gl_Position = vec4(2 * position.x - 1, 1 - 2 * position.y, 1, 1);
-    }
-);
-
-NSString *const vertexShaderString150 = SHADER_STRING(150,
+NSString *const vertexShaderString = SHADER_STRING(
     in vec2 position;
     out vec2 texcoord;
 
@@ -41,22 +28,7 @@ NSString *const vertexShaderString150 = SHADER_STRING(150,
 );
 
 // Fragment shader code
-NSString *const fragmentShaderString120 = SHADER_STRING(120,
-    uniform sampler2D color;
-    uniform float alpha;
-
-    varying vec2 texcoord;
-
-    void main(void)
-    {
-        vec2 uv = vec2(texcoord.x, 1 - texcoord.y);
-        vec4 col = texture2D(color, uv);
-        col.a = mix(col.a, 1, alpha); // discards alpha when alpha == 1
-        gl_FragColor = col;
-    }
-);
-
-NSString *const fragmentShaderString150 = SHADER_STRING(150,
+NSString *const fragmentShaderString = SHADER_STRING(
     uniform sampler2D color;
     uniform float alpha;
 
@@ -128,10 +100,8 @@ static BOOL ValidateProgram(GLint program)
 
 - (void)setup
 {
-    BOOL isCore = SyphonOpenGLContextIsCoreProfile(CGLGetCurrentContext());
-    
-    _vertexShader = InitShader(GL_VERTEX_SHADER, isCore ? vertexShaderString150 : vertexShaderString120);
-    _fragmentShader = InitShader(GL_FRAGMENT_SHADER, isCore ? fragmentShaderString150 : fragmentShaderString120);
+    _vertexShader = InitShader(GL_VERTEX_SHADER, vertexShaderString);
+    _fragmentShader = InitShader(GL_FRAGMENT_SHADER, fragmentShaderString);
     
     _program = glCreateProgram();
     glAttachShader(_program, _vertexShader);
@@ -140,7 +110,7 @@ static BOOL ValidateProgram(GLint program)
     
     if (ValidateProgram(_program))
     {
-        if (isCore) glBindFragDataLocation(_program, 0, "o_frag_color");
+        glBindFragDataLocation(_program, 0, "o_frag_color");
         _colorLocation = glGetUniformLocation(_program, "color");
         _alphaLocation = glGetUniformLocation(_program, "alpha");
     }

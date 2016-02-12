@@ -30,122 +30,62 @@
 #import "SyphonServer.h"
 #import "SyphonIOSurfaceImage.h"
 #import "SyphonPrivate.h"
-#import "SyphonOpenGLFunctions.h"
 #import "SyphonServerConnectionManager.h"
 #import "SyphonServerDrawingHelper.h"
-
-#define CGL_MACRO_CONTEXT _cgl_ctx
-
-#import <IOSurface/IOSurface.h>
-#import <OpenGL/CGLMacro.h>
+#import <OpenGL/gl3.h>
+#import <OpenGL/gl3ext.h>
 #import <libkern/OSAtomic.h>
 
-@interface SyphonServer (Private)
+@interface SyphonServer(Private)
 + (void)addServerToRetireList:(NSString *)serverUUID;
 + (void)removeServerFromRetireList:(NSString *)serverUUID;
 + (void)retireRemainingServers;
 @end
 
-__attribute__((destructor)) static void finalizer()
-{
-	[SyphonServer retireRemainingServers];
-}
-
 @implementation SyphonServer
 {
+    int32_t _mdLock;
     NSString *_name;
     NSString *_uuid;
     
     SyphonServerConnectionManager *_connectionManager;
-    
-    CGLContextObj _cgl_ctx;
     SyphonServerDrawingHelper *_drawingHelper;
     
     void *_surfaceRef;
-    BOOL _pushPending;
     SyphonImage *_surfaceTexture;
     GLuint _surfaceFBO;
-    
-    GLint _virtualScreen;
-    BOOL _useSRGBBuffer;
-    BOOL _discardAlphaChannel;
-    
-    GLint _previousReadFBO;
-    GLint _previousDrawFBO;
-    GLint _previousFBO;
-    
-    int32_t _mdLock;
+    BOOL _pushPending;
     
     id<NSObject> _activityToken;
 }
 
-+ (BOOL)automaticallyNotifiesObserversForKey:(NSString *)theKey
-{
-    if ([theKey isEqualToString:@"hasClients"])
-        return NO;
-	else
-        return [super automaticallyNotifiesObserversForKey:theKey];
-}
+#pragma mark
+#pragma mark Initializers and finalizers
 
-+ (NSSet *)keyPathsForValuesAffectingValueForKey:(NSString *)key
-{
-	if ([key isEqualToString:@"serverDescription"])
-		return [NSSet setWithObject:@"name"];
-	else
-		return [super keyPathsForValuesAffectingValueForKey:key];
-}
-
-- (id)init
-{
-	return [self initWithName:nil context:NULL options:nil];
-}
-
-- (id)initWithName:(NSString*)serverName context:(CGLContextObj)context options:(NSDictionary *)options
+- (id)initWithName:(NSString*)serverName
 {
 	if (self = [super init])
 	{
-		if (context == NULL)
-		{
-			[self release];
-			return nil;
-		}
+        _mdLock = OS_SPINLOCK_INIT;
+        _name = [(serverName ? serverName : @"") copy];
+        _uuid = SyphonCreateUUIDString();
 		
-		_mdLock = OS_SPINLOCK_INIT;
-		
-		_cgl_ctx = CGLRetainContext(context);
         _drawingHelper = [[SyphonServerDrawingHelper alloc] init];
-        
-		if (serverName == nil) serverName = @"";
-		_name = [serverName copy];
-		_uuid = SyphonCreateUUIDString();
 		
-		_connectionManager = [[SyphonServerConnectionManager alloc] initWithUUID:_uuid options:options];
-		
+		_connectionManager = [[SyphonServerConnectionManager alloc] initWithUUID:_uuid];
 		[_connectionManager addObserver:self forKeyPath:@"hasClients" options:NSKeyValueObservingOptionPrior context:nil];
-		
-		if (![_connectionManager start])
-		{
+        
+		if (![_connectionManager start]) {
 			[self release];
 			return nil;
 		}
         
         [[self class] addServerToRetireList:_uuid];
         [self startBroadcasts];
-		
-        // We check for changes to the context's virtual screen, so set it to an invalid value
-        // so our first binding counts as a change
-        _virtualScreen = -1;
-        
-        NSNumber *enableSRGB = [options objectForKey:SyphonServerOptionUseSRGBBuffer];
-        _useSRGBBuffer = ([enableSRGB respondsToSelector:@selector(boolValue)] && [enableSRGB boolValue] == YES);
-
-        NSNumber *discardAlpha = [options objectForKey:SyphonServerOptionDiscardAlphaChannel];
-        _discardAlphaChannel = ([discardAlpha respondsToSelector:@selector(boolValue)] && [discardAlpha boolValue] == YES);
 
         // Prevent this app from being suspended or terminated eg if it goes off-screen (MacOS 10.9+ only)
         NSProcessInfo *processInfo = [NSProcessInfo processInfo];
-        if ([processInfo respondsToSelector:@selector(beginActivityWithOptions:reason:)])
-        {
+        if ([processInfo respondsToSelector:@selector(beginActivityWithOptions:reason:)]) {
             NSActivityOptions options = NSActivityAutomaticTerminationDisabled | NSActivityBackground;
             _activityToken = [[processInfo beginActivityWithOptions:options reason:_uuid] retain];
         }
@@ -155,8 +95,7 @@ __attribute__((destructor)) static void finalizer()
 
 - (void)shutDownServer
 {
-	if (_connectionManager)
-	{
+	if (_connectionManager) {
 		[_connectionManager removeObserver:self forKeyPath:@"hasClients"];
 		[_connectionManager stop];
 		[_connectionManager release];
@@ -167,15 +106,8 @@ __attribute__((destructor)) static void finalizer()
 	
     [self stopBroadcasts];
     [[self class] removeServerFromRetireList:_uuid];
-	
-	if (_cgl_ctx)
-	{
-		CGLReleaseContext(_cgl_ctx);
-		_cgl_ctx = NULL;
-	}
 
-    if (_activityToken)
-    {
+    if (_activityToken) {
         [[NSProcessInfo processInfo] endActivity:_activityToken];
         [_activityToken release];
         _activityToken = nil;
@@ -190,39 +122,90 @@ __attribute__((destructor)) static void finalizer()
 
 - (void)dealloc
 {
-	SYPHONLOG(@"Server deallocing, name: %@, UUID: %@", self.name, [self.serverDescription objectForKey:SyphonServerDescriptionUUIDKey]);
+    SYPHONLOG(@"Server deallocing, name: %@, UUID: %@", self.name, _uuid);
 	[self shutDownServer];
 	[_name release];
 	[_uuid release];
 	[super dealloc];
 }
 
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
+#pragma mark KVO implementation
+
++ (BOOL)automaticallyNotifiesObserversForKey:(NSString *)theKey
 {
-	if ([keyPath isEqualToString:@"hasClients"])
-	{
-		if ([[change objectForKey:NSKeyValueChangeNotificationIsPriorKey] boolValue] == YES)
-			[self willChangeValueForKey:keyPath];
-		else
-			[self didChangeValueForKey:keyPath];
-	}
-	else
-	{
-		[super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
-	}
+    if ([theKey isEqualToString:@"hasClients"])
+        return NO;
+    else
+        return [super automaticallyNotifiesObserversForKey:theKey];
 }
 
-- (CGLContextObj)context
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
 {
-	return _cgl_ctx;
+    if ([keyPath isEqualToString:@"hasClients"])
+    {
+        if ([[change objectForKey:NSKeyValueChangeNotificationIsPriorKey] boolValue] == YES)
+            [self willChangeValueForKey:keyPath];
+        else
+            [self didChangeValueForKey:keyPath];
+    }
+    else
+    {
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+    }
 }
+
+#pragma mark Public Properties
+
+- (NSString*)name
+{
+    OSSpinLockLock(&_mdLock);
+    NSString *result = [_name retain];
+    OSSpinLockUnlock(&_mdLock);
+    return [result autorelease];
+}
+
+- (void)setName:(NSString *)newName
+{
+    [newName retain];
+    OSSpinLockLock(&_mdLock);
+    [_name release];
+    _name = newName;
+    OSSpinLockUnlock(&_mdLock);
+    [_connectionManager setName:newName];
+    [self broadcastServerUpdate];
+}
+
+- (BOOL)hasClients
+{
+	return _connectionManager.hasClients;
+}
+
+#pragma mark Public Methods
+
+- (void)publishFrameTexture:(GLuint)texID size:(NSSize)size
+{
+    if (texID != 0 && [self bindToDrawFrameOfSize:size])
+    {
+        if (self.linearToSRGB) glEnable(GL_FRAMEBUFFER_SRGB);
+        [_drawingHelper drawFrameTexture:texID surfaceSize:_surfaceTexture.textureSize discardAlpha:self.discardsAlpha];
+        [self unbindAndPublish];
+    }
+}
+
+- (void)stop
+{
+    [self shutDownServer];
+}
+
+#pragma mark
+#pragma mark Private Properties
 
 - (NSDictionary *)serverDescription
 {
-	NSDictionary *surface = _connectionManager.surfaceDescription;
-	if (!surface) surface = [NSDictionary dictionary];
+    NSDictionary *surface = _connectionManager.surfaceDescription;
+    if (!surface) surface = [NSDictionary dictionary];
     NSArray *surfaceKey = [NSArray arrayWithObject:surface];
-
+    
     NSString *appName = [[NSRunningApplication currentApplication] localizedName];
     if (!appName) appName = [[NSProcessInfo processInfo] processName];
     if (!appName) appName = [NSString string];
@@ -236,34 +219,7 @@ __attribute__((destructor)) static void finalizer()
              SyphonServerDescriptionSurfacesKey: surfaceKey};
 }
 
-- (NSString*)name
-{
-	OSSpinLockLock(&_mdLock);
-	NSString *result = [_name retain];
-	OSSpinLockUnlock(&_mdLock);
-	return [result autorelease];
-}
-
-- (void)setName:(NSString *)newName
-{	
-	[newName retain];
-	OSSpinLockLock(&_mdLock);
-	[_name release];
-	_name = newName;
-	OSSpinLockUnlock(&_mdLock);
-	[_connectionManager setName:newName];
-    [self broadcastServerUpdate];
-}
-
-- (void)stop
-{
-	[self shutDownServer];
-}
-
-- (BOOL)hasClients
-{
-	return _connectionManager.hasClients;
-}
+#pragma mark FBO & IOSurface handling
 
 - (BOOL)bindToDrawFrameOfSize:(NSSize)size
 {
@@ -277,28 +233,16 @@ __attribute__((destructor)) static void finalizer()
     
     if (_surfaceTexture == nil) return NO;
     
-	glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &_previousFBO);
-	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING_EXT, &_previousReadFBO);
-	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING_EXT, &_previousDrawFBO);
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, _surfaceFBO);
-
-	if (_useSRGBBuffer) glEnable(GL_FRAMEBUFFER_SRGB);
-
+    glBindFramebuffer(GL_FRAMEBUFFER, _surfaceFBO);
+    
     return YES;
 }
 
 - (void)unbindAndPublish
 {
-	// flush to make sure IOSurface updates are seen globally.
-	glFlushRenderAPPLE();
-		
-	if(_useSRGBBuffer) glDisable(GL_FRAMEBUFFER_SRGB);
-
-	// restore state
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, _previousFBO);	
-	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, _previousReadFBO);
-	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, _previousDrawFBO);
-
+    // flush to make sure IOSurface updates are seen globally.
+    glFlushRenderAPPLE();
+    
     if (_pushPending)
     {
         // Our IOSurface won't update until the next glFlush(). Usually we rely on our host doing this, but
@@ -310,22 +254,8 @@ __attribute__((destructor)) static void finalizer()
         _pushPending = NO;
     }
     
-	[_connectionManager publishNewFrame];
+    [_connectionManager publishNewFrame];
 }
-
-- (void)publishFrameTexture:(GLuint)texID textureDimensions:(NSSize)size
-{
-	if (texID != 0 && [self bindToDrawFrameOfSize:size])
-	{
-        [_drawingHelper drawFrameTexture:texID surfaceSize:_surfaceTexture.textureSize inContex:_cgl_ctx discardAlpha:_discardAlphaChannel];
-		[self unbindAndPublish];
-	}
-}
-
-#pragma mark -
-#pragma mark Private methods
-
-#pragma mark FBO & IOSurface handling
 
 - (void)setupIOSurfaceForSize:(NSSize)size
 {
@@ -336,16 +266,8 @@ __attribute__((destructor)) static void finalizer()
                                         (NSString*)kIOSurfaceBytesPerElement: [NSNumber numberWithUnsignedInteger:4U]};
     _surfaceRef =  IOSurfaceCreate((CFDictionaryRef)surfaceAttributes);
     
-    // save state
-    GLint previousRBO;
-    glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &_previousFBO);
-    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING_EXT, &_previousReadFBO);
-    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING_EXT, &_previousDrawFBO);
-    glGetIntegerv(GL_RENDERBUFFER_BINDING_EXT, &previousRBO);
-    
     // make a new texture.
-    GLenum internalFormat = _useSRGBBuffer ? GL_SRGB8_ALPHA8_EXT : GL_RGBA8;
-    _surfaceTexture = [[SyphonIOSurfaceImage alloc] initWithSurface:_surfaceRef forContext:_cgl_ctx internalFormat:internalFormat];
+    _surfaceTexture = [[SyphonIOSurfaceImage alloc] initWithSurface:_surfaceRef];
     
     if(_surfaceTexture == nil)
     {
@@ -353,30 +275,24 @@ __attribute__((destructor)) static void finalizer()
     }
     else
     {
-        glGenFramebuffersEXT(1, &_surfaceFBO);
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, _surfaceFBO);
-        glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_EXT, _surfaceTexture.textureName, 0);
+        glGenFramebuffers(1, &_surfaceFBO);
+        glBindFramebuffer(GL_FRAMEBUFFER, _surfaceFBO);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, _surfaceTexture.textureName, 0);
         
-        GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-        if (status != GL_FRAMEBUFFER_COMPLETE_EXT)
+        GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_COMPLETE)
         {
             SYPHONLOG(@"SyphonServer: Cannot create FBO (OpenGL Error %04X)", status);
             [self destroyIOSurface];
         }
     }
-    
-    // restore state
-    glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, previousRBO);
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, _previousFBO);	
-    glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, _previousReadFBO);
-    glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, _previousDrawFBO);
 }
 
 - (void) destroyIOSurface
 {
 	if (_surfaceFBO != 0)
 	{
-		glDeleteFramebuffersEXT(1, &_surfaceFBO);
+		glDeleteFramebuffers(1, &_surfaceFBO);
 		_surfaceFBO = 0;
 	}
 	
@@ -392,16 +308,20 @@ __attribute__((destructor)) static void finalizer()
 
 #pragma mark Notification Handling for Server Presence
 
-/*
- Broadcast and discovery is done via NSDistributedNotificationCenter. Servers notify announce, change (currently only affects name) and retirement.
- Discovery is done by a discovery-request notification, to which servers respond with an announce.
- 
- If this gets unweildy we could move it into a SyphonBroadcaster class
- */
+//
+// Broadcast and discovery is done via NSDistributedNotificationCenter.
+// Servers notify announce, change (currently only affects name) and retirement.
+//
+// Discovery is done by a discovery-request notification,
+// to which servers respond with an announce.
+//
+// If this gets unweildy we could move it into a SyphonBroadcaster class
+//
 
-/*
- We track all instances and send a retirement broadcast for any which haven't been stopped when the code is unloaded. 
- */
+//
+// We track all instances and send a retirement broadcast
+// for any which haven't been stopped when the code is unloaded.
+//
 
 static OSSpinLock mRetireListLock = OS_SPINLOCK_INIT;
 static NSMutableSet *mRetireList = nil;
@@ -410,9 +330,7 @@ static NSMutableSet *mRetireList = nil;
 {
     OSSpinLockLock(&mRetireListLock);
     if (mRetireList == nil)
-    {
         mRetireList = [[NSMutableSet alloc] initWithCapacity:1U];
-    }
     [mRetireList addObject:serverUUID];
     OSSpinLockUnlock(&mRetireListLock);
 }
@@ -453,15 +371,13 @@ static NSMutableSet *mRetireList = nil;
 {
 	// Register for any Announcement Requests.
 	[[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(handleDiscoveryRequest:) name:SyphonServerAnnounceRequest object:nil];
-	
 	[self broadcastServerAnnounce];
 }
 
-- (void) handleDiscoveryRequest:(NSNotification*) aNotification
+- (void)handleDiscoveryRequest:(NSNotification*) aNotification
 {
 	SYPHON_UNUSED(aNotification);
 	SYPHONLOG(@"Got Discovery Request");
-	
 	[self broadcastServerAnnounce];
 }
 
@@ -494,3 +410,11 @@ static NSMutableSet *mRetireList = nil;
 }
 
 @end
+
+#pragma mark
+#pragma mark Local scope finalizer
+
+__attribute__((destructor)) static void finalizer()
+{
+    [SyphonServer retireRemainingServers];
+}

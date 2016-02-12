@@ -27,28 +27,18 @@
      SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import <Cocoa/Cocoa.h>
-#import <Quartz/Quartz.h>
-#import <OpenGL/OpenGL.h>
+#import <Foundation/Foundation.h>
+#import <OpenGL/gltypes.h>
 
-extern NSString * const SyphonServerOptionUseSRGBBuffer;
-extern NSString * const SyphonServerOptionDiscardAlphaChannel;
+@interface SyphonServer : NSObject
 
-#define SYPHON_SERVER_UNIQUE_CLASS_NAME SYPHON_UNIQUE_CLASS_NAME(SyphonServer)
-
-@interface SYPHON_SERVER_UNIQUE_CLASS_NAME : NSObject
-
-@property (readonly) CGLContextObj context;
 @property (retain) NSString *name;
-@property (readonly) NSDictionary *serverDescription;
 @property (readonly) BOOL hasClients;
+@property (assign) BOOL discardsAlpha;
+@property (assign) BOOL linearToSRGB;
 
-- (id)initWithName:(NSString *)serverName context:(CGLContextObj)context options:(NSDictionary *)options;
-- (void)publishFrameTexture:(GLuint)texID textureDimensions:(NSSize)size;
+- (id)initWithName:(NSString *)serverName;
+- (void)publishFrameTexture:(GLuint)texID size:(NSSize)size;
 - (void)stop;
 
 @end
-
-#if defined(SYPHON_USE_CLASS_ALIAS)
-@compatibility_alias SyphonServer SYPHON_SERVER_UNIQUE_CLASS_NAME;
-#endif

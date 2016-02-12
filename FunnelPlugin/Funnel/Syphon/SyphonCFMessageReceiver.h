@@ -30,16 +30,10 @@
 #import <Cocoa/Cocoa.h>
 #import "SyphonMessageReceiver.h"
 
-#define SYPHON_CFMESSAGE_RECEIVER_UNIQUE_CLASS_NAME SYPHON_UNIQUE_CLASS_NAME(SyphonCFMessageReceiver)
-
-@interface SYPHON_CFMESSAGE_RECEIVER_UNIQUE_CLASS_NAME : SyphonMessageReceiver {
+@interface SyphonCFMessageReceiver : SyphonMessageReceiver {
 @private
 	CFMessagePortRef _port;
 	CFRunLoopSourceRef _runLoopSource;
 }
 
 @end
-
-#if defined(SYPHON_USE_CLASS_ALIAS)
-@compatibility_alias SyphonCFMessageReceiver SYPHON_CFMESSAGE_RECEIVER_UNIQUE_CLASS_NAME;
-#endif

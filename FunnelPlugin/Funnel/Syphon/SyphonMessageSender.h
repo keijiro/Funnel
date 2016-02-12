@@ -29,9 +29,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-#define SYPHON_MESSAGE_SENDER_UNIQUE_CLASS_NAME SYPHON_UNIQUE_CLASS_NAME(SyphonMessageSender)
-
-@interface SYPHON_MESSAGE_SENDER_UNIQUE_CLASS_NAME : NSObject {
+@interface SyphonMessageSender : NSObject {
 @private
 	NSString *_name;
 	void (^_handler)(void);
@@ -41,10 +39,6 @@
 @property (readonly) BOOL isValid;
 - (void)send:(id <NSCoding>)payload ofType:(uint32_t)type;
 @end
-@interface SYPHON_MESSAGE_SENDER_UNIQUE_CLASS_NAME (Subclassing)
+@interface SyphonMessageSender (Subclassing)
 - (void)invalidate;
 @end
-
-#if defined(SYPHON_USE_CLASS_ALIAS)
-@compatibility_alias SyphonMessageSender SYPHON_MESSAGE_SENDER_UNIQUE_CLASS_NAME;
-#endif

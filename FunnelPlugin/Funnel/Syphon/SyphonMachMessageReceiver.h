@@ -30,15 +30,9 @@
 #import <Cocoa/Cocoa.h>
 #import "SyphonMessageReceiver.h"
 
-#define SYPHON_MACH_MESSAGE_RECEIVER_UNIQUE_CLASS_NAME SYPHON_UNIQUE_CLASS_NAME(SyphonMachMessageReceiver)
-
-@interface SYPHON_MACH_MESSAGE_RECEIVER_UNIQUE_CLASS_NAME : SyphonMessageReceiver <NSMachPortDelegate> {
+@interface SyphonMachMessageReceiver : SyphonMessageReceiver <NSMachPortDelegate> {
 @private
 	NSMachPort *_port;
 }
 
 @end
-
-#if defined(SYPHON_USE_CLASS_ALIAS)
-@compatibility_alias SyphonMachMessageReceiver SYPHON_MACH_MESSAGE_RECEIVER_UNIQUE_CLASS_NAME;
-#endif

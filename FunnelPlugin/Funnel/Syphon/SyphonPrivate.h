@@ -53,14 +53,6 @@ extern NSString * const SyphonServerDescriptionSurfacesKey; // An NSArray of NSD
 extern NSString * const SyphonSurfaceType;
 extern NSString * const SyphonSurfaceTypeIOSurface;
 
-// SyphonServer options
-extern NSString * const SyphonServerOptionIsPrivate;
-extern NSString * const SyphonServerOptionAntialiasSampleCount;
-extern NSString * const SyphonServerOptionDepthBufferResolution;
-extern NSString * const SyphonServerOptionStencilBufferResolution;
-extern NSString * const SyphonServerOptionUseSRGBBuffer;
-extern NSString * const SyphonServerOptionDiscardAlphaChannel;
-
 NSString *SyphonCreateUUIDString(void) NS_RETURNS_RETAINED;
 
 typedef volatile int32_t SyphonSafeBool;

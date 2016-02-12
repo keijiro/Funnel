@@ -1,7 +1,8 @@
 #import <Foundation/Foundation.h>
+#import <OpenGL/gltypes.h>
 
 @interface SyphonServerDrawingHelper : NSObject
 
-- (void)drawFrameTexture:(GLuint)texID surfaceSize:(NSSize)surfaceSize inContex:(CGLContextObj)context discardAlpha:(BOOL)discardAlpha;
+- (void)drawFrameTexture:(GLuint)texID surfaceSize:(NSSize)surfaceSize discardAlpha:(BOOL)discardAlpha;
 
 @end

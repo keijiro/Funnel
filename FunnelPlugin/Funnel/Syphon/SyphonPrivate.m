@@ -39,13 +39,6 @@ NSString * const SyphonServerDescriptionSurfacesKey = @"SyphonServerDescriptionS
 NSString * const SyphonSurfaceType = @"SyphonSurfaceType";
 NSString * const SyphonSurfaceTypeIOSurface = @"SyphonSurfaceTypeIOSurface";
 
-NSString * const SyphonServerOptionIsPrivate = @"SyphonServerOptionIsPrivate";
-NSString * const SyphonServerOptionAntialiasSampleCount = @"SyphonServerOptionAntialiasSampleCount";
-NSString * const SyphonServerOptionDepthBufferResolution = @"SyphonServerOptionDepthBufferResolution";
-NSString * const SyphonServerOptionStencilBufferResolution = @"SyphonServerOptionStencilBufferResolution";
-NSString * const SyphonServerOptionUseSRGBBuffer = @"SyphonServerOptionUseSRGBBuffer";
-NSString * const SyphonServerOptionDiscardAlphaChannel = @"SyphonServerOptionDiscardAlphaChannel";
-
 NSString *SyphonCreateUUIDString(void)
 {
 	// generate UUID

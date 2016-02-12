@@ -39,9 +39,7 @@
  
  */
 
-#define SYPHON_MESSAGE_QUEUE_UNIQUE_CLASS_NAME SYPHON_UNIQUE_CLASS_NAME(SyphonMessageQueue)
-
-@interface SYPHON_MESSAGE_QUEUE_UNIQUE_CLASS_NAME : NSObject {
+@interface SyphonMessageQueue : NSObject {
 @private
 	OSSpinLock _lock;
 	void *_head;
@@ -65,7 +63,3 @@
 @property (readwrite, assign) void *userInfo;
 
 @end
-
-#if defined(SYPHON_USE_CLASS_ALIAS)
-@compatibility_alias SyphonMessageQueue SYPHON_MESSAGE_QUEUE_UNIQUE_CLASS_NAME;
-#endif

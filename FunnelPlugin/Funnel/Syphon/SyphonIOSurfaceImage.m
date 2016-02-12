@@ -28,54 +28,31 @@
 */
 
 #import "SyphonIOSurfaceImage.h"
-#import <OpenGL/CGLMacro.h>
-// For IOSurface
 #import <IOSurface/IOSurface.h>
+#import <OpenGL/gl3.h>
 #import <OpenGL/CGLIOSurface.h>
-//@eromanc: For CoreProfile Checking
-#import "SyphonOpenGLFunctions.h"
-
 
 @implementation SyphonIOSurfaceImage
-- (id)initWithSurface:(IOSurfaceRef)surfaceRef forContext:(CGLContextObj)context
 {
-    return [self initWithSurface:surfaceRef forContext:context internalFormat:GL_RGBA8];
+    IOSurfaceRef _surface;
+    GLuint _texture;
+    NSSize _size;
 }
 
-- (id)initWithSurface:(IOSurfaceRef)surfaceRef forContext:(CGLContextObj)context internalFormat:(GLenum)internalFormat
+- (id)initWithSurface:(IOSurfaceRef)surfaceRef
 {
-    self = [super init];
-	if (self)
+	if (surfaceRef && (self = [super init]))
 	{
-		if (context == nil || surfaceRef == nil)
-		{
-			[self release];
-			return nil;
-		}
-        
-        GLboolean isCoreProfile = SyphonOpenGLContextIsCoreProfile(context);
-        
 		_surface = (IOSurfaceRef)CFRetain(surfaceRef);
-		cgl_ctx = CGLRetainContext(context);
+        
 		_size.width = IOSurfaceGetWidth(surfaceRef);
 		_size.height = IOSurfaceGetHeight(surfaceRef);
-
-        if (!isCoreProfile) {//@eromanc: I think this call is not needed at all, because it seems like it just remembers the currently 2D bound texture, but I'm not completely sure.
-            glPushAttrib(GL_TEXTURE_BIT);
-        }
-		// create the surface backed texture
+        
 		glGenTextures(1, &_texture);
-        if(!isCoreProfile){
-            glEnable(GL_TEXTURE_RECTANGLE_ARB);
-        }
-		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texture);
+		glBindTexture(GL_TEXTURE_RECTANGLE, _texture);
 		
-		CGLError err = CGLTexImageIOSurface2D(cgl_ctx, GL_TEXTURE_RECTANGLE_ARB, internalFormat, _size.width, _size.height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, _surface, 0);
-		
-        if(!isCoreProfile){
-            glPopAttrib();
-        }
-
+		CGLError err = CGLTexImageIOSurface2D(CGLGetCurrentContext(), GL_TEXTURE_RECTANGLE, GL_SRGB8_ALPHA8, _size.width, _size.height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, _surface, 0);
+        
 		if(err != kCGLNoError)
 		{
 			SYPHONLOG(@"Error creating IOSurface texture: %s & %x", CGLErrorString(err), glGetError());
@@ -88,13 +65,8 @@
 
 - (void)destroyResources
 {
-	// TODO: think about exposing this so it can be destroyed straight away in a GC app
-	if (_texture != 0)
-	{
-		glDeleteTextures(1, &_texture);
-	}
+	if (_texture) glDeleteTextures(1, &_texture);
 	if (_surface) CFRelease(_surface);
-	if (cgl_ctx) CGLReleaseContext(cgl_ctx);
 }
 
 - (void)finalize
