@@ -8,15 +8,21 @@ rendered frames with other applications that supports the [Syphon][Syphon]
 protocol (e.g., [MadMapper][MadMapper], [VDMX][VDMX]) without introducing any
 performance loss.
 
+Compatibility Note
+------------------
+
+This version is redesigned and optimized for [the new OpenGL backend (OpenGL
+Core)][GLCore] and not compatible with the legacy OpenGL backend. If it's
+required to support legacy OpenGL, use [the legacy version][Legacy] instead.
+
 System Requirements
 -------------------
 
-- Mac OS X 10.6 (Snow Leopard) or later
-- Unity 5.2 or later
+- Mac OS X 10.8 or later
+- Unity 5.3 or later
 
-This version uses the new low-level native plugin interface that is only
-supported on 5.2 and later versions. If it's required to support 5.1 and earlier
-versions, [the legacy version][Legacy] is available for use.
+This version only supports the 64-bit runtime and the OpenGL Core API mode.
+[The legacy version][Legacy] is available for legacy setups.
 
 Setting Up
 ----------
@@ -36,23 +42,21 @@ It's useful to identify the server on the client side.
 Properties
 ----------
 
-![Inspector][Inspector]
+**Screen Width/Height, Anti Aliasing** - Configures the screen to be sent.
 
-**Screen Width/Height, Anti Aliasing** - Screen resolution of shared frames.
+**Discard Alpha** - Clears the alpha channel with 1.0 (completely opaque)
+before sending.
 
-**Alpha Channel** - Determines if alpha channel is to be shared. When set to
-off, the server clears the alpha channel before publishing.
-
-**Render Mode** - Determines how the frames are shared.
- - Send Only - Sends the frames and doesn't keep them. Rendered frames are only
+**Render Mode** - Determines how the frame is shared.
+ - Send Only - Sends the frame and doesn't keep it. The rendered frame is only
    available on the client side.
- - Render To Target - Sends the frames and copies them to a render texture.
- - Preview On Game View - Sends the frames and display them on the Game view.
+ - Render To Target - Sends the frame and copies it to the render texture.
+ - Preview On Game View - Sends the frame and display it on the Game view.
 
 License
 -------
 
-Copyright (C) 2014-2016 Keijiro Takahashi
+Copyright (C) 2013-2016 Keijiro Takahashi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -79,3 +83,4 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 [Syphon]:     http://syphon.v002.info
 [VDMX]:       http://vidvox.net
 [MadMapper]:  http://madmapper.com
+[GLCore]:     http://docs.unity3d.com/Manual/OpenGLCoreDetails.html
