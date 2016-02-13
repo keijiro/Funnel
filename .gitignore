@@ -1,5 +1,5 @@
-Unity/Library/
-Unity/Temp/
+UnityProject/Library/
+UnityProject/Temp/
 
 *.csproj
 *.unityproj

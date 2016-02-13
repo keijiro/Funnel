@@ -333,7 +333,7 @@
 			);
 			name = "Copy Executable File";
 			outputPaths = (
-				"../Unity/Assets/Funnel/Plugins/$(EXECUTABLE_PATH)",
+				"../UnityProject/Assets/Funnel/Plugins/$(EXECUTABLE_PATH)",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
