@@ -2,63 +2,97 @@ fileFormatVersion: 2
 guid: 6d9b2b6862d5647d09a2d838aaa77143
 folderAsset: yes
 PluginImporter:
-  serializedVersion: 1
+  externalObjects: {}
+  serializedVersion: 2
   iconMap: {}
   executionOrder: {}
   isPreloaded: 0
+  isOverridable: 0
   platformData:
-    Android:
+  - first:
+      '': Any
+    second:
       enabled: 0
       settings:
-        CPU: AnyCPU
-    Any:
+        Exclude Editor: 0
+        Exclude Linux: 1
+        Exclude Linux64: 1
+        Exclude LinuxUniversal: 1
+        Exclude OSXUniversal: 0
+        Exclude Win: 1
+        Exclude Win64: 1
+        Exclude iOS: 1
+  - first:
+      '': OSXIntel
+    second:
+      enabled: 1
+      settings: {}
+  - first:
+      '': OSXIntel64
+    second:
+      enabled: 1
+      settings: {}
+  - first:
+      Any: 
+    second:
       enabled: 0
       settings: {}
-    Editor:
+  - first:
+      Editor: Editor
+    second:
       enabled: 1
       settings:
         CPU: x86_64
         DefaultValueInitialized: true
         OS: OSX
-    Linux:
-      enabled: 1
+  - first:
+      Facebook: Win
+    second:
+      enabled: 0
+      settings:
+        CPU: AnyCPU
+  - first:
+      Facebook: Win64
+    second:
+      enabled: 0
+      settings:
+        CPU: AnyCPU
+  - first:
+      Standalone: Linux
+    second:
+      enabled: 0
       settings:
         CPU: x86
-    Linux64:
-      enabled: 1
+  - first:
+      Standalone: Linux64
+    second:
+      enabled: 0
       settings:
         CPU: x86_64
-    LinuxUniversal:
+  - first:
+      Standalone: OSXUniversal
+    second:
       enabled: 1
       settings:
         CPU: AnyCPU
-    OSXIntel:
+  - first:
+      Standalone: Win
+    second:
       enabled: 0
       settings:
-        CPU: None
-    OSXIntel64:
-      enabled: 1
-      settings:
         CPU: AnyCPU
-    OSXUniversal:
-      enabled: 1
-      settings:
-        CPU: x86_64
-    SamsungTV:
+  - first:
+      Standalone: Win64
+    second:
       enabled: 0
       settings:
-        STV_MODEL: STANDARD_13
-    Win:
-      enabled: 1
-      settings:
         CPU: AnyCPU
-    Win64:
-      enabled: 1
-      settings:
-        CPU: AnyCPU
-    iOS:
+  - first:
+      iPhone: iOS
+    second:
       enabled: 0
       settings:
+        AddToEmbeddedBinaries: false
         CompileFlags: 
         FrameworkDependencies: 
   userData: 
