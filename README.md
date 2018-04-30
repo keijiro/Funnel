@@ -1,3 +1,11 @@
+# Important Notice
+
+This project is going to be discontinued because a new Syphon plugin ([KlakSyphon]) has been released that provides a superset of the features in Funnel. Please consider migrating to the new plugin.
+
+https://github.com/keijiro/KlakSyphon
+
+[KlakSyphon]: https://github.com/keijiro/KlakSyphon
+
 Funnel
 ======
 
